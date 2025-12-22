@@ -3,57 +3,62 @@
 <head>
   <meta charset="UTF-8">
   <title>QR Code Generator</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='styke.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styke.css') }}">
 </head>
 <body>
-  <section class="card">
-    <h2>QR Code Generator</h2>
-    <form method="post" id="qr-form">
-      <input
-        type="url"
-        name="url"
-        id="url-input"
-        placeholder="Paste your link here"
-        value="{{ url }}"
-        required
-      />
-      <button type="submit" id="generate-btn">Generate</button>
-    </form>
 
-    {% if qr_image %}
-      <div class="result" id="result">
-        <img
-          src="data:image/png;base64,{{ qr_image }}"
-          alt="QR Code"
-        />
+<section class="card">
+  <h2>QR Code Generator</h2>
 
-        <div class="actions">
-          <a
-            href="data:image/png;base64,{{ qr_image }}"
-            download="qr-code.png"
-          >
-            <button type="button">Download</button>
-          </a>
+  <form method="post" id="qr-form">
+    <input
+      type="url"
+      name="url"
+      id="url-input"
+      placeholder="Paste your link here"
+      value="{{ url or '' }}"
+      required
+    />
+    <button type="submit" id="generate-btn">Generate</button>
+  </form>
 
-          <button type="button" class="danger" id="delete-btn">
-            Delete
-          </button>
-        </div>
+  {% if qr_image %}
+    <div class="result fade-in" id="result">
+      <img src="data:image/png;base64,{{ qr_image }}" alt="QR Code">
+
+      <div class="actions">
+        <a href="data:image/png;base64,{{ qr_image }}" download="qr-code.png">
+          <button type="button">Download</button>
+        </a>
+
+        <button type="button" class="danger" id="delete-btn">
+          Delete
+        </button>
       </div>
-    {% endif %}
-  </section>
-  <script>
-    const deleteBtn = document.getElementById("delete-btn");
-    const urlInput = document.getElementById("url-input");
-    const result = document.getElementById("result");
+    </div>
+  {% endif %}
 
-    if (deleteBtn) {
-      deleteBtn.addEventListener("click", () => {
-        if (result) result.remove();
-        if (urlInput) urlInput.value = "";
-      });
-    }
-  </script>
+  <div class="history">
+    <div class="history-header">
+      <h3>Activity</h3>
+      <button type="button" id="clear-history" class="danger small">
+        Clear
+      </button>
+    </div>
 
+    <table>
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>URL</th>
+          <th>Time</th>
+        </tr>
+      </thead>
+      <tbody id="history-table"></tbody>
+    </table>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

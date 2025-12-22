@@ -41,15 +41,14 @@ def generate_qr_base64(url: str) -> str:
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    qr_image = None
-    url = ""
-
     if request.method == "POST":
         url = request.form.get("url")
         if url:
             qr_image = generate_qr_base64(url)
+            return render_template("index.html", qr_image=qr_image, url=url)
 
-    return render_template("index.html", qr_image=qr_image, url=url)
+    # GET → clean page
+    return render_template("index.html")
 
 
 if __name__ == "__main__":
