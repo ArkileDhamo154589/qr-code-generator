@@ -1,64 +1,127 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>QR Code Generator</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styke.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
 
-<section class="card">
-  <h2>QR Code Generator</h2>
+{% block title %}QR Code Generator{% endblock %}
 
-  <form method="post" id="qr-form">
-    <input
-      type="url"
-      name="url"
-      id="url-input"
-      placeholder="Paste your link here"
-      value="{{ url or '' }}"
-      required
-    />
-    <button type="submit" id="generate-btn">Generate</button>
-  </form>
+{% block content %}
 
-  {% if qr_image %}
-    <div class="result fade-in" id="result">
-      <img src="data:image/png;base64,{{ qr_image }}" alt="QR Code">
-
-      <div class="actions">
-        <a href="data:image/png;base64,{{ qr_image }}" download="qr-code.png">
-          <button type="button">Download</button>
-        </a>
-
-        <button type="button" class="danger" id="delete-btn">
-          Delete
-        </button>
-      </div>
-    </div>
-  {% endif %}
-
-  <div class="history">
-    <div class="history-header">
-      <h3>Activity</h3>
-      <button type="button" id="clear-history" class="danger small">
-        Clear
-      </button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Action</th>
-          <th>URL</th>
-          <th>Time</th>
-        </tr>
-      </thead>
-      <tbody id="history-table"></tbody>
-    </table>
+<!-- HERO -->
+<section class="py-5 text-center bg-light">
+  <div class="container">
+    <h1 class="fw-bold mb-3">
+      Create a Free QR Code in 3 Simple Steps
+    </h1>
+    <p class="text-muted">
+      Generate static QR codes locally with Python.
+      No expiration. No tracking. No external services.
+    </p>
   </div>
 </section>
 
-<script src="{{ url_for('static', filename='app.js') }}"></script>
-</body>
-</html>
+<section class="py-5">
+  <div class="container">
+
+    <!-- STEP 1 -->
+    <div class="row g-5 align-items-center mb-5">
+      <div class="col-md-6">
+        <span class="badge bg-dark mb-2">Step 1</span>
+        <h3>Enter your URL</h3>
+        <p class="text-muted">
+          Paste any link you want to convert into a QR Code.
+          The QR code will be static and never expire.
+        </p>
+      </div>
+
+      <div class="col-md-6 text-center">
+        <div class="p-4 border rounded shadow-sm">
+          URL to QR Code
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 -->
+    <div class="row g-5 align-items-center mb-5">
+      <div class="col-md-6">
+        <span class="badge bg-dark mb-2">Step 2</span>
+        <h3>Generate and Preview</h3>
+        <p class="text-muted">
+          Instantly generate and preview the QR Code directly in your browser.
+        </p>
+      </div>
+
+      <div class="col-md-6 text-center">
+        <div class="p-4 border rounded shadow-sm">
+          Live QR Preview
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div class="row g-5 align-items-center">
+      <div class="col-md-6">
+        <span class="badge bg-dark mb-2">Step 3</span>
+        <h3>Download</h3>
+        <p class="text-muted">
+          Download your QR Code as a transparent PNG,
+          ready for print or digital use.
+        </p>
+      </div>
+
+      <div class="col-md-6 text-center">
+        <div class="p-4 border rounded shadow-sm">
+          Download PNG
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<section id="generator" class="py-5 bg-light">
+  <div class="container d-flex justify-content-center">
+    {% include "qr_section.html" %}
+  </div>
+</section>
+<section id="about" class="py-5 bg-light">
+  <div class="container text-center">
+    <h2 class="fw-bold mb-3">About This Project</h2>
+
+    <p class="text-muted mb-4">
+      This QR Code Generator is an open-source project built with Python and Flask.
+      It demonstrates how to generate static QR codes locally without relying on
+      third-party services.
+    </p>
+
+    <p class="text-muted">
+      You can explore the full source code, project structure, and documentation
+      on GitHub.
+    </p>
+
+    <a
+      href="https://github.com/ArkileDhamo154589/qr-code-generator"
+      target="_blank"
+      class="btn btn-dark mt-3"
+    >
+      Learn more on GitHub
+    </a>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container text-center">
+    <h2 class="fw-bold mb-3">Free & No Expiration</h2>
+    <p class="text-muted">
+      All generated QR Codes are static and will work forever.
+      This project does not rely on any third-party API.
+    </p>
+
+    <div class="row mt-4">
+      <div class="col-md-3">✅ Free to use</div>
+      <div class="col-md-3">✅ No expiration</div>
+      <div class="col-md-3">✅ No tracking</div>
+      <div class="col-md-3">✅ Runs locally</div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
