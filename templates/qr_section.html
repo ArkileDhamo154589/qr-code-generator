@@ -5,7 +5,6 @@
     Enter any URL below to generate a QR Code instantly.
     The QR code never expires and can be downloaded with a transparent background.
   </p>
-
   <div class="generator-wrapper">
     <section class="card">
       <form method="post">
@@ -18,7 +17,6 @@
         />
         <button type="submit">Generate</button>
       </form>
-
       {% if qr_image %}
         <div class="result fade-in" id="result">
           <img src="data:image/png;base64,{{ qr_image }}" alt="QR Code">

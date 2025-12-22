@@ -19,7 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
       historyTable.appendChild(tr);
     });
   }
-
   function addHistory(action, url = "") {
     history.unshift({
       action,
