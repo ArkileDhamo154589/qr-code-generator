@@ -52,5 +52,6 @@ It does not use any third-party APIs or external services.
 
 <img width="1706" height="996" alt="image" src="https://github.com/user-attachments/assets/2c0daa75-179b-498e-9ea0-868c733e4f02" />
 
-<img width="1706" height="996" alt="image" src="https://github.com/user-attachments/assets/bebc92fc-6b6d-49b8-b9a5-58942200be0e" />
+<img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/31a25880-584b-4a8b-b622-0617162d8bad" />
+
 
