@@ -210,3 +210,12 @@ code {
   border-radius: 4px;
   font-size: 13px;
 }
+@media screen and (max-width:768px){
+  .card{
+    width:330px;
+  }
+  
+  form{
+    flex-direction: column;
+  }
+}
