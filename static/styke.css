@@ -1,0 +1,90 @@
+body {
+  background: #f4f4f4;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  padding-top: 60px;
+}
+
+/* Card */
+.card {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 360px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.card h2 {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+/* Form */
+form {
+  display: flex;
+  gap: 8px;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+input:focus {
+  border-color: #000;
+}
+
+/* Buttons */
+button {
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: black;
+  color: white;
+  transition: opacity 0.2s ease, transform 0.1s ease;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Result */
+.result {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.result img {
+  width: 200px;
+  height: 200px;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.danger {
+  background: #e53935;
+}
+
+.danger:hover {
+  opacity: 0.9;
+}
