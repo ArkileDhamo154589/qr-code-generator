@@ -49,8 +49,8 @@ It does not use any third-party APIs or external services.
 ### 1️ Clone the repository
 
 
+<img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/b646429b-6e8e-4073-bd5c-d89157c0ac76" />
 
-<img width="1706" height="996" alt="image" src="https://github.com/user-attachments/assets/2c0daa75-179b-498e-9ea0-868c733e4f02" />
 
 <img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/31a25880-584b-4a8b-b622-0617162d8bad" />
 
