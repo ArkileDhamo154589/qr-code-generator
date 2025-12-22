@@ -48,24 +48,9 @@ It does not use any third-party APIs or external services.
 
 ### 1️ Clone the repository
 
-```bash
-git clone https://github.com/ArkileDhamo154589/qr-code-generator.git
-cd qr-code-generator
 
-Create a virtual environment
-python3 -m venv venv
 
-Activate it:
-source venv/bin/activate
+<img width="1706" height="996" alt="image" src="https://github.com/user-attachments/assets/2c0daa75-179b-498e-9ea0-868c733e4f02" />
 
-If activation was successful, your terminal will show: (venv)
+<img width="1706" height="996" alt="image" src="https://github.com/user-attachments/assets/bebc92fc-6b6d-49b8-b9a5-58942200be0e" />
 
-Install dependencies
-
-pip install flask qrcode[pil] pillow
-
-Run the application
-python app.py
-
-If everything is correct, you will see:
-Running on http://127.0.0.1:5000
