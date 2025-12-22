@@ -47,7 +47,7 @@ It does not use any third-party APIs or external services.
 ##  Installation & Setup (Local)
 
 ### 1️ Clone the repository
-
+SEE LIVE https://qr-code-generator-rvde.onrender.com/
 
 <img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/b646429b-6e8e-4073-bd5c-d89157c0ac76" />
 
