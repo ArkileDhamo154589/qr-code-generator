@@ -395,6 +395,23 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[data-tilt]").forEach((el) => attachTilt(el, 8, true));
   }
 
+  // ---- Cursor spotlight --------------------------------------------------
+  const cursorGlow = document.getElementById("cursor-glow");
+  if (cursorGlow && canHover && !reduceMotion) {
+    let gx = 0, gy = 0, gRaf = 0;
+    window.addEventListener("pointermove", (e) => {
+      gx = e.clientX;
+      gy = e.clientY;
+      if (!gRaf) {
+        gRaf = requestAnimationFrame(() => {
+          cursorGlow.style.setProperty("--mx", gx + "px");
+          cursorGlow.style.setProperty("--my", gy + "px");
+          gRaf = 0;
+        });
+      }
+    }, { passive: true });
+  }
+
   // ---- Tabs --------------------------------------------------------------
   const tabs = document.querySelectorAll(".tab");
   tabs.forEach((tab) => {
