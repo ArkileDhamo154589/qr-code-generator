@@ -158,7 +158,14 @@ body {
 }
 
 /* format flow pills */
-.flow { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; }
+.flow {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 12px;
+  margin: 0 0 22px;
+}
 
 .flow-pill {
   display: inline-flex;
