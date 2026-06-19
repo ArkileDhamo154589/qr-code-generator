@@ -1,4 +1,5 @@
 Flask
 qrcode[pil]
 Pillow>=11.3
+pillow-heif
 gunicorn

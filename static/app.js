@@ -4,9 +4,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const titleInput = document.getElementById("title-input");
   const colorInput = document.getElementById("color-input");
   const colorValue = document.getElementById("color-value");
+  const color2Input = document.getElementById("color2-input");
+  const color2Value = document.getElementById("color2-value");
+  const color2Wrap = document.getElementById("color2-wrap");
+  const gradientInput = document.getElementById("gradient-input");
+  const styleInput = document.getElementById("style-input");
   const transparentInput = document.getElementById("transparent-input");
+  const transparentSwitch = document.getElementById("transparent-switch");
   const generateBtn = document.getElementById("generate-btn");
   const formError = document.getElementById("form-error");
+
+  const logoInput = document.getElementById("logo-input");
+  const logoPick = document.getElementById("logo-pick");
+  const logoChip = document.getElementById("logo-chip");
+  const logoPreview = document.getElementById("logo-preview");
+  const logoName = document.getElementById("logo-name");
+  const logoRemove = document.getElementById("logo-remove");
 
   const stage = document.getElementById("preview-stage");
   const qrFrame = document.getElementById("qr-frame");
@@ -19,7 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cardUrl = document.getElementById("card-url");
 
   // Current generated QR state
-  const state = { dataUrl: "", url: "", title: "" };
+  const state = { dataUrl: "", svg: "", url: "", title: "" };
+  let logoFile = null;
 
   // ---- Helpers ----------------------------------------------------------
   function showError(message) {
@@ -65,10 +79,46 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ---- Color input sync -------------------------------------------------
+  // ---- Color / style / logo controls ------------------------------------
   if (colorInput) {
     colorInput.addEventListener("input", () => {
       colorValue.textContent = colorInput.value;
+    });
+  }
+  if (color2Input) {
+    color2Input.addEventListener("input", () => {
+      color2Value.textContent = color2Input.value;
+    });
+  }
+  if (gradientInput) {
+    gradientInput.addEventListener("change", () => {
+      color2Wrap.hidden = !gradientInput.checked;
+    });
+  }
+
+  if (logoPick) {
+    logoPick.addEventListener("click", () => logoInput.click());
+    logoInput.addEventListener("change", () => {
+      const f = logoInput.files[0];
+      logoInput.value = "";
+      if (!f) return;
+      logoFile = f;
+      logoName.textContent = f.name;
+      try { logoPreview.src = URL.createObjectURL(f); } catch (e) {}
+      logoChip.hidden = false;
+      logoPick.hidden = true;
+      // A logo needs a solid background to stay scannable.
+      transparentInput.checked = false;
+      transparentInput.disabled = true;
+      transparentSwitch.style.opacity = "0.5";
+    });
+    logoRemove.addEventListener("click", () => {
+      logoFile = null;
+      logoChip.hidden = true;
+      logoPick.hidden = false;
+      logoPreview.removeAttribute("src");
+      transparentInput.disabled = false;
+      transparentSwitch.style.opacity = "";
     });
   }
 
@@ -169,15 +219,16 @@ document.addEventListener("DOMContentLoaded", () => {
     generateBtn.querySelector("span").textContent = "Generating…";
 
     try {
-      const res = await fetch("/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: built.data,
-          color: colorInput.value,
-          transparent: transparentInput.checked,
-        }),
-      });
+      const fd = new FormData();
+      fd.append("url", built.data);
+      fd.append("color", colorInput.value);
+      fd.append("color2", color2Input.value);
+      fd.append("transparent", transparentInput.checked);
+      fd.append("style", styleInput.value);
+      fd.append("gradient", gradientInput.checked);
+      if (logoFile) fd.append("logo", logoFile, logoFile.name);
+
+      const res = await fetch("/generate", { method: "POST", body: fd });
 
       const data = await res.json();
       if (!res.ok) {
@@ -186,6 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       state.dataUrl = "data:image/png;base64," + data.qr_image;
+      state.svg = data.svg || "";
       state.url = built.display;
       state.title = titleInput.value.trim();
 
@@ -206,6 +258,15 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("export-png").addEventListener("click", () => {
     if (!state.dataUrl) return;
     download(state.dataUrl, "qr-" + safeName("code") + ".png");
+  });
+
+  // ---- Export: SVG ------------------------------------------------------
+  document.getElementById("export-svg").addEventListener("click", () => {
+    if (!state.svg) return;
+    const blob = new Blob([state.svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    download(url, "qr-" + safeName("code") + ".svg");
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   });
 
   // ---- Export: PDF (A4, centered) --------------------------------------
@@ -436,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function addFiles(files) {
       for (const f of files) {
-        if (f.type.startsWith("image/") || /\.(png|jpe?g|webp|avif)$/i.test(f.name)) {
+        if (f.type.startsWith("image/") || /\.(png|jpe?g|webp|avif|heic|heif)$/i.test(f.name)) {
           selected.push(f);
         }
       }

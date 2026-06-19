@@ -11,15 +11,17 @@ with a live 3D animated background.
 
 **QR codes**
 - Multiple content types: **URL / text, Wi-Fi, contact (vCard), email, SMS, phone and location**
-- Pick the QR color and toggle a transparent background
-- Export three ways:
+- Design options: **module styles** (square, rounded, dots, gapped), **color gradient**,
+  transparent background and a **center logo**
+- Export four ways:
   - **Image** — transparent PNG, ready for any design
+  - **SVG** — crisp vector that scales infinitely for print
   - **PDF** — A4 page with the QR centered and the link printed below
   - **Card** — business-card layout (85.6 x 54 mm) you can print or save as PDF
 - Static codes that never expire and are not tracked
 
 **Image converter**
-- Convert between **PNG, JPG, WEBP and AVIF** in any direction
+- Convert between **PNG, JPG, WEBP and AVIF** in any direction, plus **HEIC input** (iPhone photos)
 - **Batch**: drop or select many files and convert them all at once
 - **Quality** control and optional **resize** (max dimension)
 - Live **compression stats** (original size, new size, percent saved)

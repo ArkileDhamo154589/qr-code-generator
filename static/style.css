@@ -558,6 +558,34 @@ input[type="color"] {
 
 .panel-tab { animation: rise 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* ---------- QR logo control ---------- */
+.btn-sm { padding: 8px 13px; font-size: 0.85rem; }
+.logo-control { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.logo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  max-width: 100%;
+}
+.logo-chip #logo-preview {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.logo-chip .logo-name {
+  font-size: 0.85rem;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---------- QR content types ---------- */
 .qr-types {
   display: flex;
