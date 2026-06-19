@@ -271,9 +271,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (convForm) {
     const dropzone = document.getElementById("conv-dropzone");
     const fileInput = document.getElementById("conv-input");
-    const pickBtn = document.getElementById("conv-pick");
     const fileList = document.getElementById("conv-filelist");
+    const filesHead = document.getElementById("conv-files-head");
+    const filesCount = document.getElementById("conv-files-count");
+    const clearBtn = document.getElementById("conv-clear");
     const convBtn = document.getElementById("conv-convert-btn");
+    const btnLabel = document.getElementById("conv-btn-label");
     const convError = document.getElementById("conv-error");
     const targetGroup = document.getElementById("target-group");
     const flowTarget = document.getElementById("flow-target");
@@ -285,6 +288,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let selected = [];
     let target = "png";
     let lastResults = [];
+
+    function updateConvBtn() {
+      const n = selected.length;
+      convBtn.disabled = n === 0;
+      btnLabel.textContent = n === 0
+        ? "Select images to start"
+        : "Convert " + n + " image" + (n === 1 ? "" : "s") + " to " + target.toUpperCase();
+    }
 
     function fmtSize(n) {
       if (n < 1024) return n + " B";
@@ -299,8 +310,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderFiles() {
       fileList.innerHTML = "";
+      let total = 0;
       selected.forEach((file, i) => {
+        total += file.size;
         const li = document.createElement("li");
+
+        const thumb = document.createElement("img");
+        thumb.className = "fl-thumb";
+        thumb.alt = "";
+        try { thumb.src = URL.createObjectURL(file); } catch (e) {}
+        thumb.addEventListener("load", () => URL.revokeObjectURL(thumb.src));
+
         const name = document.createElement("span");
         name.className = "fl-name";
         name.textContent = file.name;
@@ -317,10 +337,15 @@ document.addEventListener("DOMContentLoaded", () => {
           selected.splice(i, 1);
           renderFiles();
         });
-        li.append(name, size, rm);
+        li.append(thumb, name, size, rm);
         fileList.appendChild(li);
       });
-      convBtn.disabled = selected.length === 0;
+
+      const n = selected.length;
+      filesHead.hidden = n === 0;
+      filesCount.textContent =
+        n + " image" + (n === 1 ? "" : "s") + (n ? " · " + fmtSize(total) : "");
+      updateConvBtn();
     }
 
     function addFiles(files) {
@@ -332,10 +357,20 @@ document.addEventListener("DOMContentLoaded", () => {
       renderFiles();
     }
 
-    pickBtn.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("click", () => fileInput.click());
+    dropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        fileInput.click();
+      }
+    });
     fileInput.addEventListener("change", () => {
       addFiles(fileInput.files);
       fileInput.value = "";
+    });
+    clearBtn.addEventListener("click", () => {
+      selected = [];
+      renderFiles();
     });
 
     ["dragenter", "dragover"].forEach((ev) =>
@@ -364,6 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
         b.setAttribute("aria-pressed", on ? "true" : "false");
       });
       flowTarget.textContent = target.toUpperCase();
+      updateConvBtn();
     });
 
     convForm.addEventListener("submit", async (e) => {
@@ -376,7 +412,7 @@ document.addEventListener("DOMContentLoaded", () => {
       selected.forEach((f) => fd.append("files", f, f.name));
 
       convBtn.disabled = true;
-      convBtn.querySelector("span").textContent = "Converting…";
+      btnLabel.textContent = "Converting…";
 
       try {
         const res = await fetch("/convert", { method: "POST", body: fd });
@@ -387,11 +423,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         lastResults = data.results || [];
         renderResults(lastResults, data.errors || []);
+        resultsWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
       } catch (err) {
         convError_("Could not reach the converter. Is the server running?");
       } finally {
-        convBtn.disabled = selected.length === 0;
-        convBtn.querySelector("span").textContent = "Convert";
+        updateConvBtn();
       }
     });
 
