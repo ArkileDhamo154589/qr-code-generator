@@ -1,5 +1,9 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, send_file
 import qrcode
+import sqlite3
+import secrets
+import time
+import zipfile
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers.pil import (
     SquareModuleDrawer,
@@ -21,6 +25,39 @@ except Exception:
     pass
 
 app = Flask(__name__)
+
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "qrstudio.db")
+CODE_ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+
+def init_db():
+    con = sqlite3.connect(DB_PATH)
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS links ("
+        "code TEXT PRIMARY KEY, target TEXT NOT NULL, token TEXT NOT NULL, "
+        "created_at REAL NOT NULL, scans INTEGER NOT NULL DEFAULT 0)"
+    )
+    con.execute(
+        "CREATE TABLE IF NOT EXISTS scans ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL, "
+        "ts REAL NOT NULL, ua TEXT)"
+    )
+    con.commit()
+    con.close()
+
+
+init_db()
+
+
+def _gen_code(n=6):
+    return "".join(secrets.choice(CODE_ALPHABET) for _ in range(n))
+
+
+def _with_scheme(url):
+    if not re.match(r"^[a-zA-Z][a-zA-Z0-9+.-]*://", url):
+        return "http://" + url
+    return url
+
 
 DRAWERS = {
     "square": SquareModuleDrawer,
@@ -327,6 +364,125 @@ def convert():
         return jsonify(error="None of the files could be converted.", errors=errors), 400
 
     return jsonify(results=results, errors=errors, target=target)
+
+
+# ---------------------------------------------------------------------------
+# Dynamic QR codes (short links + scan analytics)
+# ---------------------------------------------------------------------------
+@app.route("/api/links", methods=["POST"])
+def create_link():
+    data = request.get_json(silent=True) or {}
+    target = (data.get("target") or "").strip()
+    if not target:
+        return jsonify(error="Missing destination."), 400
+    target = _with_scheme(target)
+
+    con = sqlite3.connect(DB_PATH)
+    code = None
+    for _ in range(6):
+        candidate = _gen_code()
+        try:
+            con.execute(
+                "INSERT INTO links(code, target, token, created_at) VALUES (?, ?, ?, ?)",
+                (candidate, target, secrets.token_urlsafe(12), time.time()),
+            )
+            con.commit()
+            code = candidate
+            break
+        except sqlite3.IntegrityError:
+            continue
+    if code is None:
+        con.close()
+        return jsonify(error="Could not allocate a code, try again."), 500
+    token = con.execute("SELECT token FROM links WHERE code=?", (code,)).fetchone()[0]
+    con.close()
+    return jsonify(code=code, token=token, short_url=request.host_url + "r/" + code)
+
+
+@app.route("/api/links/<code>", methods=["POST", "PUT"])
+def update_link(code):
+    data = request.get_json(silent=True) or {}
+    token = (data.get("token") or "").strip()
+    target = (data.get("target") or "").strip()
+    if not target:
+        return jsonify(error="Missing destination."), 400
+    target = _with_scheme(target)
+
+    con = sqlite3.connect(DB_PATH)
+    row = con.execute("SELECT token FROM links WHERE code=?", (code,)).fetchone()
+    if not row:
+        con.close()
+        return jsonify(error="Link not found."), 404
+    if row[0] != token:
+        con.close()
+        return jsonify(error="Invalid edit token."), 403
+    con.execute("UPDATE links SET target=? WHERE code=?", (target, code))
+    con.commit()
+    con.close()
+    return jsonify(ok=True, target=target)
+
+
+@app.route("/api/links/<code>/stats")
+def link_stats(code):
+    con = sqlite3.connect(DB_PATH)
+    row = con.execute("SELECT target, created_at, scans FROM links WHERE code=?", (code,)).fetchone()
+    if not row:
+        con.close()
+        return jsonify(error="Link not found."), 404
+    recent = con.execute(
+        "SELECT ts, ua FROM scans WHERE code=? ORDER BY id DESC LIMIT 10", (code,)
+    ).fetchall()
+    con.close()
+    return jsonify(
+        target=row[0],
+        created_at=row[1],
+        scans=row[2],
+        recent=[{"ts": r[0], "ua": r[1]} for r in recent],
+    )
+
+
+@app.route("/r/<code>")
+def redirect_link(code):
+    con = sqlite3.connect(DB_PATH)
+    row = con.execute("SELECT target FROM links WHERE code=?", (code,)).fetchone()
+    if not row:
+        con.close()
+        return "Link not found", 404
+    con.execute("UPDATE links SET scans = scans + 1 WHERE code=?", (code,))
+    con.execute(
+        "INSERT INTO scans(code, ts, ua) VALUES (?, ?, ?)",
+        (code, time.time(), (request.headers.get("User-Agent") or "")[:300]),
+    )
+    con.commit()
+    con.close()
+    return redirect(row[0], code=302)
+
+
+# ---------------------------------------------------------------------------
+# Bulk QR generation -> ZIP
+# ---------------------------------------------------------------------------
+@app.route("/api/bulk-qr", methods=["POST"])
+def bulk_qr():
+    data = request.get_json(silent=True) or {}
+    items = data.get("items") or []
+    items = [str(x).strip() for x in items if str(x).strip()][:200]
+    if not items:
+        return jsonify(error="Add at least one line."), 400
+
+    color = _sanitize_hex(data.get("color"), "#000000")
+    style = (data.get("style") or "square").lower()
+    if style not in DRAWERS:
+        style = "square"
+    transparent = str(data.get("transparent", "true")).lower() != "false"
+
+    mem = BytesIO()
+    with zipfile.ZipFile(mem, "w", zipfile.ZIP_DEFLATED) as zf:
+        for i, item in enumerate(items, 1):
+            qr = _build_qr(item)
+            png_b64 = generate_qr_png(qr, color, transparent, style, False, color, None)
+            zf.writestr("qr-%03d.png" % i, base64.b64decode(png_b64))
+    mem.seek(0)
+    return send_file(mem, mimetype="application/zip", as_attachment=True, download_name="qr-codes.zip")
 
 
 if __name__ == "__main__":

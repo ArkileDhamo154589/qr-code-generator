@@ -215,12 +215,35 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const dynamic = dynamicInput && dynamicInput.checked;
+
     generateBtn.disabled = true;
     generateBtn.querySelector("span").textContent = "Generating…";
 
     try {
+      let encodeData = built.data;
+      let display = built.display;
+
+      if (dynamic) {
+        const lr = await fetch("/api/links", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target: built.data }),
+        });
+        const link = await lr.json();
+        if (!lr.ok) {
+          showError(link.error || "Could not create the dynamic link.");
+          return;
+        }
+        dynState = { code: link.code, token: link.token, short: link.short_url };
+        encodeData = link.short_url;
+        display = link.short_url;
+      } else {
+        dynState = null;
+      }
+
       const fd = new FormData();
-      fd.append("url", built.data);
+      fd.append("url", encodeData);
       fd.append("color", colorInput.value);
       fd.append("color2", color2Input.value);
       fd.append("transparent", transparentInput.checked);
@@ -238,13 +261,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
       state.dataUrl = "data:image/png;base64," + data.qr_image;
       state.svg = data.svg || "";
-      state.url = built.display;
+      state.url = display;
       state.title = titleInput.value.trim();
 
       qrImage.src = state.dataUrl;
       qrFrame.hidden = false;
       stage.dataset.empty = "false";
       exportBar.hidden = false;
+
+      pushHistory(built.data);
+      showDynamic();
+
       exportBar.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (err) {
       showError("Could not reach the generator. Is the server running?");
@@ -253,6 +280,131 @@ document.addEventListener("DOMContentLoaded", () => {
       generateBtn.querySelector("span").textContent = "Generate QR code";
     }
   });
+
+  // ---- Dynamic QR, history & share --------------------------------------
+  const dynamicInput = document.getElementById("dynamic-input");
+  const dynamicBox = document.getElementById("dynamic-box");
+  const dynShort = document.getElementById("dyn-short");
+  const dynScans = document.getElementById("dyn-scans");
+  const dynTarget = document.getElementById("dyn-target");
+  let dynState = null;
+
+  async function refreshDynStats() {
+    if (!dynState) return;
+    try {
+      const r = await fetch("/api/links/" + dynState.code + "/stats");
+      const d = await r.json();
+      if (r.ok) dynScans.textContent = d.scans + (d.scans === 1 ? " scan" : " scans");
+    } catch (e) {}
+  }
+
+  function showDynamic() {
+    if (!dynamicBox) return;
+    if (dynState) {
+      dynShort.value = dynState.short;
+      dynTarget.value = "";
+      dynScans.textContent = "0 scans";
+      dynamicBox.hidden = false;
+      refreshDynStats();
+    } else {
+      dynamicBox.hidden = true;
+    }
+  }
+
+  if (dynamicBox) {
+    document.getElementById("dyn-copy").addEventListener("click", async () => {
+      try { await navigator.clipboard.writeText(dynShort.value); } catch (e) {}
+    });
+    document.getElementById("dyn-refresh").addEventListener("click", refreshDynStats);
+    document.getElementById("dyn-save").addEventListener("click", async () => {
+      if (!dynState || !dynTarget.value.trim()) return;
+      const r = await fetch("/api/links/" + dynState.code, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: dynState.token, target: dynTarget.value.trim() }),
+      });
+      const d = await r.json();
+      const saveLabel = document.querySelector("#dyn-save span");
+      saveLabel.textContent = r.ok ? "Saved" : "Error";
+      setTimeout(() => { saveLabel.textContent = "Save"; }, 1500);
+    });
+  }
+
+  // History (localStorage)
+  const HISTORY_KEY = "qrstudio-history";
+  const recentWrap = document.getElementById("qr-recent");
+  const recentChips = document.getElementById("recent-chips");
+
+  function loadHistory() {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function renderHistory() {
+    const items = loadHistory();
+    recentWrap.hidden = items.length === 0;
+    recentChips.innerHTML = "";
+    items.forEach((it) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "recent-chip";
+      chip.textContent = it.length > 40 ? it.slice(0, 40) + "…" : it;
+      chip.title = it;
+      chip.addEventListener("click", () => {
+        document.querySelector('.qr-type-btn[data-type="url"]').click();
+        urlInput.value = it;
+        urlInput.focus();
+      });
+      recentChips.appendChild(chip);
+    });
+  }
+  function pushHistory(value) {
+    if (!value) return;
+    let items = loadHistory().filter((x) => x !== value);
+    items.unshift(value);
+    items = items.slice(0, 8);
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(items)); } catch (e) {}
+    renderHistory();
+  }
+  if (recentWrap) {
+    document.getElementById("recent-clear").addEventListener("click", () => {
+      try { localStorage.removeItem(HISTORY_KEY); } catch (e) {}
+      renderHistory();
+    });
+    renderHistory();
+  }
+
+  // Share link (config encoded in URL hash)
+  const shareBtn = document.getElementById("export-share");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", async () => {
+      const cfg = {
+        d: val("url-input") || state.url,
+        c: colorInput.value,
+        c2: color2Input.value,
+        s: styleInput.value,
+        g: gradientInput.checked ? 1 : 0,
+        t: transparentInput.checked ? 1 : 0,
+      };
+      const hash = "#cfg=" + btoa(unescape(encodeURIComponent(JSON.stringify(cfg))));
+      const url = location.origin + location.pathname + hash;
+      try { await navigator.clipboard.writeText(url); } catch (e) {}
+      const lbl = document.getElementById("share-label");
+      lbl.textContent = "Link copied";
+      setTimeout(() => { lbl.textContent = "Share"; }, 1600);
+    });
+
+    // Prefill from a shared config on load
+    if (location.hash.startsWith("#cfg=")) {
+      try {
+        const cfg = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(5)))));
+        if (cfg.d) urlInput.value = cfg.d;
+        if (cfg.c) { colorInput.value = cfg.c; colorValue.textContent = cfg.c; }
+        if (cfg.c2) { color2Input.value = cfg.c2; color2Value.textContent = cfg.c2; }
+        if (cfg.s) styleInput.value = cfg.s;
+        if (cfg.g) { gradientInput.checked = true; color2Wrap.hidden = false; }
+        transparentInput.checked = !!cfg.t;
+      } catch (e) {}
+    }
+  }
 
   // ---- Export: Image ----------------------------------------------------
   document.getElementById("export-png").addEventListener("click", () => {
@@ -850,6 +1002,107 @@ document.addEventListener("DOMContentLoaded", () => {
         scanCopyLabel.textContent = "Copied";
         setTimeout(() => { scanCopyLabel.textContent = "Copy"; }, 1500);
       } catch (e) {}
+    });
+
+    // Live camera scanning
+    const camBtn = document.getElementById("scan-camera");
+    const camWrap = document.getElementById("scan-camera-wrap");
+    const video = document.getElementById("scan-video");
+    const camStop = document.getElementById("scan-camera-stop");
+    const camCanvas = document.createElement("canvas");
+    let stream = null, camRaf = 0;
+
+    function stopCamera() {
+      if (camRaf) { cancelAnimationFrame(camRaf); camRaf = 0; }
+      if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+      camWrap.hidden = true;
+    }
+    function camTick() {
+      if (!stream) return;
+      if (video.readyState >= video.HAVE_ENOUGH_DATA && video.videoWidth) {
+        const w = video.videoWidth, h = video.videoHeight;
+        camCanvas.width = w; camCanvas.height = h;
+        const ctx = camCanvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, w, h);
+        const d = ctx.getImageData(0, 0, w, h);
+        const code = typeof jsQR !== "undefined" ? jsQR(d.data, w, h) : null;
+        if (code && code.data) {
+          scanPreview.src = camCanvas.toDataURL("image/png");
+          scanText.value = code.data;
+          const isUrl = /^https?:\/\//i.test(code.data);
+          scanOpen.hidden = !isUrl;
+          if (isUrl) scanOpen.href = code.data;
+          scanResult.hidden = false;
+          stopCamera();
+          return;
+        }
+      }
+      camRaf = requestAnimationFrame(camTick);
+    }
+    async function startCamera() {
+      scanErr("");
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        scanErr("Camera is not available in this browser.");
+        return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        video.srcObject = stream;
+        await video.play();
+        camWrap.hidden = false;
+        camRaf = requestAnimationFrame(camTick);
+      } catch (e) {
+        scanErr("Could not access the camera. On a phone this requires HTTPS.");
+      }
+    }
+    if (camBtn) {
+      camBtn.addEventListener("click", (e) => { e.stopPropagation(); startCamera(); });
+      camStop.addEventListener("click", (e) => { e.stopPropagation(); stopCamera(); });
+    }
+  }
+
+  // ---- Bulk QR modal -----------------------------------------------------
+  const bulkModal = document.getElementById("bulk-modal");
+  if (bulkModal) {
+    const bulkText = document.getElementById("bulk-text");
+    const bulkError = document.getElementById("bulk-error");
+    const bulkGen = document.getElementById("bulk-generate");
+    const bulkGenLabel = document.getElementById("bulk-generate-label");
+    const openBulk = () => { bulkModal.hidden = false; document.body.style.overflow = "hidden"; bulkText.focus(); };
+    const closeBulk = () => { bulkModal.hidden = true; document.body.style.overflow = ""; };
+
+    document.getElementById("bulk-open").addEventListener("click", openBulk);
+    bulkModal.querySelectorAll("[data-close-bulk]").forEach((el) => el.addEventListener("click", closeBulk));
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !bulkModal.hidden) closeBulk(); });
+
+    bulkGen.addEventListener("click", async () => {
+      bulkError.hidden = true;
+      const items = bulkText.value.split("\n").map((s) => s.trim()).filter(Boolean);
+      if (!items.length) { bulkError.textContent = "Add at least one line."; bulkError.hidden = false; return; }
+      bulkGen.disabled = true; bulkGenLabel.textContent = "Building…";
+      try {
+        const r = await fetch("/api/bulk-qr", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items, color: colorInput.value, style: styleInput.value, transparent: transparentInput.checked }),
+        });
+        if (!r.ok) {
+          const d = await r.json().catch(() => ({}));
+          bulkError.textContent = d.error || "Failed to build the ZIP.";
+          bulkError.hidden = false;
+          return;
+        }
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        download(url, "qr-codes.zip");
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        closeBulk();
+      } catch (e) {
+        bulkError.textContent = "Could not reach the server.";
+        bulkError.hidden = false;
+      } finally {
+        bulkGen.disabled = false; bulkGenLabel.textContent = "Generate ZIP";
+      }
     });
   }
 });

@@ -13,11 +13,10 @@ with a live 3D animated background.
 - Multiple content types: **URL / text, Wi-Fi, contact (vCard), email, SMS, phone and location**
 - Design options: **module styles** (square, rounded, dots, gapped), **color gradient**,
   transparent background and a **center logo**
-- Export four ways:
-  - **Image** — transparent PNG, ready for any design
-  - **SVG** — crisp vector that scales infinitely for print
-  - **PDF** — A4 page with the QR centered and the link printed below
-  - **Card** — business-card layout (85.6 x 54 mm) you can print or save as PDF
+- Export four ways: **Image** (transparent PNG), **SVG** (vector), **PDF** (A4) and **Card** (business-card)
+- **Dynamic QR codes** — a short link you can re-point anytime, with **scan analytics**
+- **Bulk generation** — paste a list and download every QR as a single ZIP
+- **Recent history** and a **shareable config link** that rebuilds the QR
 - Static codes that never expire and are not tracked
 
 **Image converter**
@@ -29,7 +28,7 @@ with a live 3D animated background.
 - Per-file download or **Download all** as a single ZIP
 
 **Scan QR**
-- Read a QR code from any uploaded image and copy or open its content
+- Read a QR code from an uploaded image **or live from the camera**, then copy or open its content
 
 **Everything else**
 - **Installable PWA** that works offline
@@ -42,6 +41,10 @@ with a live 3D animated background.
 | Generated QR + export | Image converter | Scan QR | Mobile |
 | --- | --- | --- | --- |
 | ![QR result](docs/screenshots/02-qr-result.png) | ![Converter](docs/screenshots/03-image-converter.png) | ![Scan](docs/screenshots/05-scan.png) | ![Mobile](docs/screenshots/04-mobile.png) |
+
+Dynamic QR codes with editable destination and live scan analytics:
+
+![Dynamic QR](docs/screenshots/06-dynamic.png)
 
 ## Tech stack
 
@@ -81,6 +84,10 @@ This repo is ready for [Render](https://render.com):
 
 Create a new Web Service from the repository (or use the blueprint) and Render
 will build and start it automatically.
+
+Dynamic QR codes use a local SQLite file (`qrstudio.db`). On Render's free tier
+the filesystem is ephemeral, so links reset on redeploy/restart — attach a
+persistent disk (or swap to Postgres) if you need them to survive.
 
 ## License
 
