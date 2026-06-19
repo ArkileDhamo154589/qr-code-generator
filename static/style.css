@@ -945,6 +945,122 @@ input[type="range"]::-moz-range-thumb {
 .qr-frame { transition: transform 0.3s ease, box-shadow 0.3s ease; }
 .preview-stage:hover .qr-frame { transform: translateY(-4px) rotateX(6deg); box-shadow: 0 0 70px var(--brand-glow), var(--shadow-lg); }
 
+/* ---------- Extra flair ---------- */
+
+/* Animated gradient headline accent */
+.hero h1 .accent {
+  background: linear-gradient(90deg, #ff3b30, #ff8a3d, #ff3b30);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 22px var(--brand-glow));
+  animation: accent-shift 7s ease-in-out infinite;
+}
+@keyframes accent-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Aurora glow accents behind the hero */
+.hero::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -80px;
+  left: 50%;
+  width: min(900px, 92vw);
+  height: 420px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(40% 60% at 30% 40%, rgba(255, 59, 48, 0.18), transparent 70%),
+    radial-gradient(40% 60% at 70% 50%, rgba(255, 138, 61, 0.14), transparent 70%);
+  filter: blur(20px);
+  pointer-events: none;
+  animation: aurora 12s ease-in-out infinite alternate;
+}
+@keyframes aurora {
+  0% { transform: translateX(-52%) scale(1); opacity: 0.8; }
+  100% { transform: translateX(-48%) scale(1.1); opacity: 1; }
+}
+
+/* Gradient brand mark + active tab */
+.brand-mark { background: linear-gradient(135deg, #ff5a50, var(--brand-dim)); }
+.tab.is-active { background: linear-gradient(135deg, var(--brand), var(--brand-dim)); }
+
+/* Convert card: glow ring on hover/focus */
+.convert-card { position: relative; }
+.convert-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--brand), transparent 45%, transparent 55%, var(--brand-dim));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.convert-card:hover::after,
+.convert-card:focus-within::after { opacity: 0.7; }
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.is-visible { opacity: 1; transform: none; }
+.info-grid .reveal:nth-child(2) { transition-delay: 0.08s; }
+.info-grid .reveal:nth-child(3) { transition-delay: 0.16s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+  .hero h1 .accent { animation: none; }
+  .hero::after { animation: none; }
+}
+
+/* ---------- Full responsive tuning ---------- */
+@media (max-width: 900px) {
+  .convert-card { padding: 18px; }
+  .dropzone { padding: 26px 16px; }
+}
+
+@media (max-width: 680px) {
+  .tabs { flex-wrap: wrap; }
+  .options-row { gap: 14px; }
+  .conv-options { gap: 16px; }
+  .modal-actions { flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 16px; }
+  .hero { padding: 40px 0 20px; }
+  .lead { font-size: 0.98rem; }
+  .convert-card { padding: 14px; }
+  .dropzone { padding: 22px 12px; }
+  .dz-icon { width: 54px; height: 54px; margin-bottom: 12px; }
+  .flow-pill { padding: 7px 11px; font-size: 0.72rem; }
+  .options-row { flex-direction: column; align-items: stretch; gap: 14px; }
+  .options-row .opt, .options-row .opt-grow { width: 100%; }
+  .conv-options { flex-direction: column; align-items: stretch; }
+  .conv-options .opt { width: 100%; }
+  .btn { padding: 11px 14px; }
+  .info-card { padding: 20px; }
+}
+
+@media (max-width: 360px) {
+  .qr-types { gap: 6px; }
+  .qr-type-btn { padding: 6px 10px; font-size: 0.76rem; }
+  .target-group { grid-template-columns: 1fr 1fr; }
+  .tab span, .tab { font-size: 0.8rem; }
+}
+
 /* ---------- Print (card only) ---------- */
 @media print {
   #bg-canvas { display: none !important; }
