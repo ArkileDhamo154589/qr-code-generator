@@ -7,6 +7,9 @@
     <title>{% block title %}QR Studio{% endblock %}</title>
     <meta name="description" content="Generate static QR codes and convert images between PNG, JPG, WEBP and AVIF. Local, no tracking, no expiration.">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0a0c11">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-192.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
@@ -83,7 +86,13 @@
     <script src="{{ url_for('static', filename='three-bg.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/jspdf.umd.min.js') }}"></script>
     <script src="{{ url_for('static', filename='vendor/jszip.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/jsqr.min.js') }}"></script>
     <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
+      }
+    </script>
 </body>
 
 </html>

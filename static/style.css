@@ -518,6 +518,8 @@ input[type="color"] {
   .tabs .tab { padding: 9px 14px; font-size: 0.85rem; }
   .field-grid { grid-template-columns: 1fr; }
   .qr-type-btn { padding: 7px 12px; font-size: 0.8rem; }
+  .scan-result { flex-direction: column; align-items: stretch; }
+  .scan-preview img { width: 100px; height: 100px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -721,9 +723,26 @@ input[type="range"]::-moz-range-thumb {
 .conv-settings .opt-label { margin-bottom: 10px; }
 .target-group {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   gap: 10px;
 }
+
+/* QR scanner result */
+.scan-result { display: flex; gap: 18px; margin-top: 20px; align-items: flex-start; }
+.scan-preview { flex: none; }
+.scan-preview img {
+  width: 120px; height: 120px; object-fit: contain;
+  border-radius: 10px; background: var(--bg); border: 1px solid var(--line);
+}
+.scan-data { flex: 1; min-width: 0; }
+.scan-data textarea {
+  width: 100%; margin-top: 6px; resize: vertical;
+  padding: 12px 14px; font-family: inherit; font-size: 0.95rem;
+  color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line-strong); border-radius: var(--radius-sm); outline: none;
+}
+.scan-data textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+.scan-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 .target-btn {
   display: flex;
   flex-direction: column;

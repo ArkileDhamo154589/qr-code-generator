@@ -430,7 +430,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const qualityInput = document.getElementById("conv-quality");
     const qualityVal = document.getElementById("quality-val");
     const qualityWrap = document.getElementById("quality-wrap");
+    const convOptions = document.getElementById("conv-options");
     const resizeSelect = document.getElementById("conv-resize");
+    const rotateSelect = document.getElementById("conv-rotate");
+    const flipSelect = document.getElementById("conv-flip");
+    const cropInput = document.getElementById("conv-crop");
 
     let selected = [];
     let target = "png";
@@ -439,9 +443,67 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateConvBtn() {
       const n = selected.length;
       convBtn.disabled = n === 0;
-      btnLabel.textContent = n === 0
-        ? "Select images to start"
-        : "Convert " + n + " image" + (n === 1 ? "" : "s") + " to " + target.toUpperCase();
+      if (n === 0) {
+        btnLabel.textContent = "Select images to start";
+      } else if (target === "pdf") {
+        btnLabel.textContent = "Combine " + n + " image" + (n === 1 ? "" : "s") + " into a PDF";
+      } else {
+        btnLabel.textContent = "Convert " + n + " image" + (n === 1 ? "" : "s") + " to " + target.toUpperCase();
+      }
+    }
+
+    function loadImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    async function buildImagesPdf() {
+      const { jsPDF } = window.jspdf;
+      convBtn.disabled = true;
+      btnLabel.textContent = "Building PDF…";
+      try {
+        const doc = new jsPDF({ unit: "pt", format: "a4" });
+        const pw = doc.internal.pageSize.getWidth();
+        const ph = doc.internal.pageSize.getHeight();
+        const margin = 24;
+        let firstThumb = "";
+
+        for (let i = 0; i < selected.length; i++) {
+          const img = await loadImage(selected[i]);
+          const maxPx = 1600;
+          const sc = Math.min(1, maxPx / Math.max(img.naturalWidth, img.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(img.naturalWidth * sc));
+          canvas.height = Math.max(1, Math.round(img.naturalHeight * sc));
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(img.src);
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+          if (i === 0) firstThumb = dataUrl;
+          if (i > 0) doc.addPage();
+          const r = Math.min((pw - margin * 2) / canvas.width, (ph - margin * 2) / canvas.height);
+          const dw = canvas.width * r, dh = canvas.height * r;
+          doc.addImage(dataUrl, "JPEG", (pw - dw) / 2, (ph - dh) / 2, dw, dh);
+        }
+
+        const blob = doc.output("blob");
+        const url = URL.createObjectURL(blob);
+        lastResults = [{ name: "images.pdf", dataUrl: url, bytes: blob.size, thumb: firstThumb }];
+        renderResults(lastResults, []);
+        resultsTitle.textContent = "PDF created — " + selected.length + " page" + (selected.length === 1 ? "" : "s");
+        download(url, "images.pdf");
+        resultsWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      } catch (e) {
+        convError_("Could not build the PDF.");
+      } finally {
+        updateConvBtn();
+      }
     }
 
     function fmtSize(n) {
@@ -545,8 +607,9 @@ document.addEventListener("DOMContentLoaded", () => {
         b.classList.toggle("is-active", on);
         b.setAttribute("aria-pressed", on ? "true" : "false");
       });
-      flowTarget.textContent = target.toUpperCase();
-      qualityWrap.hidden = target === "png";
+      flowTarget.textContent = target === "pdf" ? "PDF" : target.toUpperCase();
+      qualityWrap.hidden = target === "png" || target === "pdf";
+      convOptions.hidden = target === "pdf"; // transforms apply to image conversions only
       updateConvBtn();
     });
 
@@ -561,10 +624,18 @@ document.addEventListener("DOMContentLoaded", () => {
       convError_("");
       if (selected.length === 0) return;
 
+      if (target === "pdf") {
+        await buildImagesPdf();
+        return;
+      }
+
       const fd = new FormData();
       fd.append("target", target);
       fd.append("quality", qualityInput.value);
       fd.append("max_dim", resizeSelect.value);
+      fd.append("rotate", rotateSelect.value);
+      fd.append("flip", flipSelect.value);
+      fd.append("crop", cropInput.checked);
       selected.forEach((f) => fd.append("files", f, f.name));
 
       convBtn.disabled = true;
@@ -595,7 +666,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const img = document.createElement("img");
         img.className = "result-thumb";
-        img.src = r.dataUrl;
+        img.src = r.thumb || r.dataUrl;
         img.alt = r.name;
 
         const name = document.createElement("p");
@@ -668,6 +739,82 @@ document.addEventListener("DOMContentLoaded", () => {
         downloadAll.disabled = false;
         downloadAllLabel.textContent = prev;
       }
+    });
+  }
+
+  // ---- QR scanner / decoder ---------------------------------------------
+  const scanDropzone = document.getElementById("scan-dropzone");
+  if (scanDropzone) {
+    const scanInput = document.getElementById("scan-input");
+    const scanError = document.getElementById("scan-error");
+    const scanResult = document.getElementById("scan-result");
+    const scanPreview = document.getElementById("scan-preview-img");
+    const scanText = document.getElementById("scan-text");
+    const scanOpen = document.getElementById("scan-open");
+    const scanCopy = document.getElementById("scan-copy");
+    const scanCopyLabel = document.getElementById("scan-copy-label");
+
+    function scanErr(msg) {
+      scanError.textContent = msg || "";
+      scanError.hidden = !msg;
+    }
+
+    function decode(file) {
+      scanErr("");
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const max = 1000;
+        const sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * sc));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * sc));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = typeof jsQR !== "undefined" ? jsQR(data.data, canvas.width, canvas.height) : null;
+
+        scanPreview.src = url;
+        scanResult.hidden = false;
+        if (code && code.data) {
+          scanText.value = code.data;
+          const isUrl = /^https?:\/\//i.test(code.data);
+          scanOpen.hidden = !isUrl;
+          if (isUrl) scanOpen.href = code.data;
+        } else {
+          scanText.value = "";
+          scanOpen.hidden = true;
+          scanErr("No QR code found in this image. Try a clearer or closer photo.");
+        }
+      };
+      img.onerror = () => scanErr("Could not read this image (HEIC is not supported for scanning).");
+      img.src = url;
+    }
+
+    scanDropzone.addEventListener("click", () => scanInput.click());
+    scanDropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); scanInput.click(); }
+    });
+    scanInput.addEventListener("change", () => {
+      if (scanInput.files[0]) decode(scanInput.files[0]);
+      scanInput.value = "";
+    });
+    ["dragenter", "dragover"].forEach((ev) =>
+      scanDropzone.addEventListener(ev, (e) => { e.preventDefault(); scanDropzone.classList.add("is-drag"); })
+    );
+    ["dragleave", "drop"].forEach((ev) =>
+      scanDropzone.addEventListener(ev, (e) => { e.preventDefault(); scanDropzone.classList.remove("is-drag"); })
+    );
+    scanDropzone.addEventListener("drop", (e) => {
+      if (e.dataTransfer && e.dataTransfer.files[0]) decode(e.dataTransfer.files[0]);
+    });
+    scanCopy.addEventListener("click", async () => {
+      if (!scanText.value) return;
+      try {
+        await navigator.clipboard.writeText(scanText.value);
+        scanCopyLabel.textContent = "Copied";
+        setTimeout(() => { scanCopyLabel.textContent = "Copy"; }, 1500);
+      } catch (e) {}
     });
   }
 });

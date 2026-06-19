@@ -25,6 +25,10 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"></path></svg>
         Image Converter
       </button>
+      <button type="button" class="tab" id="tab-scan" role="tab" aria-selected="false" data-panel="panel-scan">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M3 12h18"></path></svg>
+        Scan QR
+      </button>
     </div>
 
     <!-- PANEL: QR -->
@@ -293,10 +297,13 @@
               <button type="button" class="target-btn" data-target="avif" aria-pressed="false">
                 <span class="t-name">AVIF</span><span class="t-sub">Best size</span>
               </button>
+              <button type="button" class="target-btn" data-target="pdf" aria-pressed="false">
+                <span class="t-name">PDF</span><span class="t-sub">One document</span>
+              </button>
             </div>
           </div>
 
-          <div class="conv-options">
+          <div class="conv-options" id="conv-options">
             <label class="opt conv-quality" id="quality-wrap">
               <span class="opt-label">Quality <span class="muted" id="quality-val">90</span></span>
               <input type="range" id="conv-quality" min="10" max="100" value="90">
@@ -309,6 +316,28 @@
                 <option value="1024">1024 px</option>
                 <option value="512">512 px</option>
               </select>
+            </label>
+            <label class="opt">
+              <span class="opt-label">Rotate</span>
+              <select id="conv-rotate" class="select">
+                <option value="0">None</option>
+                <option value="90">90&deg;</option>
+                <option value="180">180&deg;</option>
+                <option value="270">270&deg;</option>
+              </select>
+            </label>
+            <label class="opt">
+              <span class="opt-label">Flip</span>
+              <select id="conv-flip" class="select">
+                <option value="">None</option>
+                <option value="h">Horizontal</option>
+                <option value="v">Vertical</option>
+              </select>
+            </label>
+            <label class="switch crop-switch">
+              <input type="checkbox" id="conv-crop">
+              <span class="switch-track" aria-hidden="true"></span>
+              <span class="switch-label">Crop to square</span>
             </label>
           </div>
 
@@ -338,6 +367,57 @@
       </div>
       </div>
     </div><!-- /panel-convert -->
+
+    <!-- PANEL: Scan QR -->
+    <div class="panel-tab" id="panel-scan" role="tabpanel" hidden>
+      <div class="flow" aria-hidden="true">
+        <span class="flow-pill">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
+          QR CODE
+        </span>
+        <span class="flow-to">to</span>
+        <span class="flow-pill flow-pill--out">TEXT</span>
+      </div>
+
+      <div class="tilt-scene">
+      <div class="convert-card" id="convert-card-3">
+        <input type="file" id="scan-input" accept="image/png,image/jpeg,image/webp,image/avif,image/heic,image/heif,.png,.jpg,.jpeg,.webp,.avif,.heic,.heif" hidden>
+        <div class="dropzone is-clickable" id="scan-dropzone" role="button" tabindex="0" aria-label="Select or drop a QR image">
+          <div class="dz-inner">
+            <span class="dz-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><path d="M3 12h18"></path></svg>
+            </span>
+            <p class="dz-title">Scan a QR code</p>
+            <p class="dz-hint">Drop or select an image that contains a QR code</p>
+            <span class="btn btn-primary" id="scan-pick" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M12 5v14"></path></svg>
+              <span>Select image</span>
+            </span>
+          </div>
+        </div>
+
+        <p class="form-error" id="scan-error" role="alert" hidden></p>
+
+        <div class="scan-result" id="scan-result" hidden>
+          <div class="scan-preview"><img id="scan-preview-img" alt="Scanned image"></div>
+          <div class="scan-data">
+            <span class="opt-label">Decoded content</span>
+            <textarea id="scan-text" readonly rows="3"></textarea>
+            <div class="scan-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="scan-copy">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span id="scan-copy-label">Copy</span>
+              </button>
+              <a class="btn btn-primary btn-sm" id="scan-open" target="_blank" rel="noopener" hidden>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path></svg>
+                <span>Open link</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div><!-- /panel-scan -->
 
   </div>
 </section>

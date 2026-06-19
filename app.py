@@ -157,6 +157,22 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/manifest.webmanifest")
+def manifest():
+    resp = app.send_static_file("manifest.webmanifest")
+    resp.headers["Content-Type"] = "application/manifest+json"
+    return resp
+
+
+@app.route("/sw.js")
+def service_worker():
+    # Served from root so the service worker can control the whole site.
+    resp = app.send_static_file("sw.js")
+    resp.headers["Content-Type"] = "text/javascript"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
+
+
 @app.route("/generate", methods=["POST"])
 def generate():
     # Accept multipart (with an optional logo file) or JSON.
@@ -194,10 +210,28 @@ def generate():
     return jsonify(qr_image=png, svg=svg, url=url)
 
 
-def convert_image(file_storage, target, quality=90, max_dim=0, original_bytes=0):
+def convert_image(file_storage, target, quality=90, max_dim=0, original_bytes=0,
+                  rotate=0, flip="", crop=False):
     pil_format, ext, mime, keeps_alpha = TARGETS[target]
 
     image = Image.open(file_storage.stream)
+
+    # Center-crop to a square.
+    if crop:
+        s = min(image.width, image.height)
+        left = (image.width - s) // 2
+        top = (image.height - s) // 2
+        image = image.crop((left, top, left + s, top + s))
+
+    # Rotate clockwise by 90 / 180 / 270 degrees.
+    if rotate in (90, 180, 270):
+        image = image.rotate(-rotate, expand=True)
+
+    # Flip.
+    if flip == "h":
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+    elif flip == "v":
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
 
     # Optional downscale (keeps aspect ratio, never upscales).
     if max_dim and (image.width > max_dim or image.height > max_dim):
@@ -257,6 +291,19 @@ def convert():
         max_dim = 0
     max_dim = max(0, min(10000, max_dim))
 
+    try:
+        rotate = int(request.form.get("rotate") or 0)
+    except ValueError:
+        rotate = 0
+    if rotate not in (0, 90, 180, 270):
+        rotate = 0
+
+    flip = (request.form.get("flip") or "").strip().lower()
+    if flip not in ("", "h", "v"):
+        flip = ""
+
+    crop = str(request.form.get("crop", "false")).lower() == "true"
+
     files = [f for f in request.files.getlist("files") if f and f.filename]
     if not files:
         return jsonify(error="Please add at least one image."), 400
@@ -272,7 +319,7 @@ def convert():
             if size > MAX_FILE_BYTES:
                 errors.append({"name": f.filename, "error": "File too large (max 20 MB)."})
                 continue
-            results.append(convert_image(f, target, quality, max_dim, size))
+            results.append(convert_image(f, target, quality, max_dim, size, rotate, flip, crop))
         except Exception:
             errors.append({"name": f.filename, "error": "Could not convert this file."})
 

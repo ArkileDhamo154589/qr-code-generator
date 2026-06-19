@@ -23,20 +23,25 @@ with a live 3D animated background.
 **Image converter**
 - Convert between **PNG, JPG, WEBP and AVIF** in any direction, plus **HEIC input** (iPhone photos)
 - **Batch**: drop or select many files and convert them all at once
-- **Quality** control and optional **resize** (max dimension)
+- **Quality** control, optional **resize**, **rotate**, **flip** and **crop to square**
+- **Combine images into a single PDF**
 - Live **compression stats** (original size, new size, percent saved)
 - Per-file download or **Download all** as a single ZIP
 
+**Scan QR**
+- Read a QR code from any uploaded image and copy or open its content
+
 **Everything else**
+- **Installable PWA** that works offline
 - 3D animated background (three.js) and tilt / hover interactions
 - Mobile-first responsive layout
 - No database, no third-party APIs — runs fully offline once installed
 
 ## Screenshots
 
-| Generated QR + export | Image converter | Mobile |
-| --- | --- | --- |
-| ![QR result](docs/screenshots/02-qr-result.png) | ![Converter](docs/screenshots/03-image-converter.png) | ![Mobile](docs/screenshots/04-mobile.png) |
+| Generated QR + export | Image converter | Scan QR | Mobile |
+| --- | --- | --- | --- |
+| ![QR result](docs/screenshots/02-qr-result.png) | ![Converter](docs/screenshots/03-image-converter.png) | ![Scan](docs/screenshots/05-scan.png) | ![Mobile](docs/screenshots/04-mobile.png) |
 
 ## Tech stack
 
