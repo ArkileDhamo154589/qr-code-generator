@@ -1,131 +1,192 @@
 {% extends "base.html" %}
 
-{% block title %}QR Code Generator{% endblock %}
+{% block title %}QR Studio — Convert any link into a QR code{% endblock %}
 
 {% block content %}
 
-<!-- HERO -->
-<section class="py-5 text-center bg-light">
+<!-- HERO / CONVERTER -->
+<section class="hero">
   <div class="container">
-    <h1 class="fw-bold mb-3">
-      Create a Free QR Code in 3 Simple Steps
-    </h1>
-    <p class="text-muted">
-      Generate static QR codes locally with Python.
-      No expiration. No tracking. No external services.
-    </p>
+    <div class="hero-head">
+      <h1>QR Code <span class="accent">Generator</span></h1>
+      <p class="lead">
+        Convert any link or text into a static QR code, then download it as an
+        image, a PDF, or a print-ready card.
+      </p>
+
+      <!-- format flow (à la CloudConvert "WEBP to JPG") -->
+      <div class="flow" aria-hidden="true">
+        <span class="flow-pill">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          LINK / TEXT
+        </span>
+        <span class="flow-to">to</span>
+        <span class="flow-pill flow-pill--out">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
+          QR CODE
+        </span>
+      </div>
+    </div>
+
+    <!-- The conversion card -->
+    <div class="tilt-scene">
+    <div class="convert-card" id="convert-card">
+      <div class="dropzone">
+        <div class="dz-inner">
+          <span class="dz-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          </span>
+
+          <form id="qr-form" novalidate>
+            <div class="input-row">
+              <input
+                type="text"
+                id="url-input"
+                name="url"
+                placeholder="https://example.com"
+                autocomplete="off"
+                required
+              />
+              <button type="submit" class="btn btn-primary" id="generate-btn">
+                <span>Generate</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
+              </button>
+            </div>
+            <p class="dz-hint">Paste a link, text, email address or any data above</p>
+            <p class="form-error" id="form-error" role="alert" hidden></p>
+          </form>
+        </div>
+      </div>
+
+      <!-- Options -->
+      <div class="options-row">
+        <label class="opt opt-grow">
+          <span class="opt-label">Card title <span class="muted">(optional)</span></span>
+          <input type="text" id="title-input" name="title" placeholder="e.g. Scan to visit our menu" autocomplete="off" maxlength="60">
+        </label>
+
+        <label class="opt">
+          <span class="opt-label">QR color</span>
+          <span class="color-control">
+            <input type="color" id="color-input" value="#111111">
+            <span class="color-value" id="color-value">#111111</span>
+          </span>
+        </label>
+
+        <label class="switch">
+          <input type="checkbox" id="transparent-input" checked>
+          <span class="switch-track" aria-hidden="true"></span>
+          <span class="switch-label">Transparent</span>
+        </label>
+      </div>
+
+      <!-- Result -->
+      <div class="result-block">
+        <div class="preview-stage" id="preview-stage" data-empty="true">
+          <div class="preview-empty" id="preview-empty"></div>
+          <div class="qr-frame" id="qr-frame" hidden>
+            <img id="qr-image" alt="Generated QR code">
+          </div>
+        </div>
+
+        <div class="export-bar" id="export-bar" hidden>
+          <div class="export-meta">
+            <span class="export-title">QR code ready</span>
+            <span class="export-sub">Choose how to export it</span>
+          </div>
+          <div class="export-actions">
+            <button type="button" class="btn btn-success" id="export-png">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"></path></svg>
+              <span>Image</span>
+            </button>
+            <button type="button" class="btn btn-ghost" id="export-pdf">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+              <span>PDF</span>
+            </button>
+            <button type="button" class="btn btn-ghost" id="export-card">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>
+              <span>Card</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
   </div>
 </section>
 
-<!-- STEPS -->
-<section class="py-5">
+<!-- FORMAT INFO (à la CloudConvert format cards) -->
+<section id="features" class="info-section">
   <div class="container">
-
-    <!-- STEP 1 -->
-    <div class="row g-5 align-items-center mb-5">
-      <div class="col-12 col-md-6">
-        <span class="badge bg-dark mb-2">Step 1</span>
-        <h3>Enter your URL</h3>
-        <p class="text-muted">
-          Paste any link you want to convert into a QR Code.
-          The QR code will be static and never expire.
+    <div class="info-grid">
+      <article class="info-card">
+        <h2>What is a QR code?</h2>
+        <p>
+          A QR (Quick Response) code is a 2D barcode that stores data such as a
+          URL, plain text, an email address or Wi-Fi credentials. Any phone
+          camera can read it instantly — no app required.
         </p>
-      </div>
+        <p class="muted">
+          The codes generated here are <strong>static</strong>: the data lives
+          inside the code itself, so they never expire and are not tracked.
+        </p>
+      </article>
 
-      <div class="col-12 col-md-6 text-center">
-        <div class="p-4 border rounded shadow-sm">
-          URL to QR Code
+      <article class="info-card">
+        <h2>Three ways to export</h2>
+        <ul class="info-list">
+          <li>
+            <span class="info-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"></path></svg></span>
+            <div><strong>Image</strong> — a crisp PNG with optional transparent background, ready for any design.</div>
+          </li>
+          <li>
+            <span class="info-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg></span>
+            <div><strong>PDF</strong> — an A4 page with the QR centered and the link printed below.</div>
+          </li>
+          <li>
+            <span class="info-ic" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg></span>
+            <div><strong>Card</strong> — a business-card layout with your title, ready to print or save as PDF.</div>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- CARD MODAL -->
+<div class="modal" id="card-modal" hidden>
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-dialog" role="dialog" aria-modal="true" aria-label="QR card preview">
+    <div class="modal-head">
+      <h3>Card preview</h3>
+      <button type="button" class="icon-btn" data-close-modal aria-label="Close">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="card-preview-wrap">
+      <div class="qr-card" id="qr-card">
+        <div class="qr-card-media">
+          <img id="card-qr-image" alt="QR code">
+        </div>
+        <div class="qr-card-body">
+          <p class="qr-card-title" id="card-title">Scan me</p>
+          <p class="qr-card-url" id="card-url"></p>
         </div>
       </div>
     </div>
 
-    <!-- STEP 2 -->
-    <div class="row g-5 align-items-center mb-5">
-      <div class="col-12 col-md-6">
-        <span class="badge bg-dark mb-2">Step 2</span>
-        <h3>Generate and Preview</h3>
-        <p class="text-muted">
-          Instantly generate and preview the QR Code directly in your browser.
-        </p>
-      </div>
-
-      <div class="col-12 col-md-6 text-center">
-        <div class="p-4 border rounded shadow-sm">
-          Live QR Preview
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3 -->
-    <div class="row g-5 align-items-center">
-      <div class="col-12 col-md-6">
-        <span class="badge bg-dark mb-2">Step 3</span>
-        <h3>Download</h3>
-        <p class="text-muted">
-          Download your QR Code as a transparent PNG,
-          ready for print or digital use.
-        </p>
-      </div>
-
-      <div class="col-12 col-md-6 text-center">
-        <div class="p-4 border rounded shadow-sm">
-          Download PNG
-        </div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- GENERATOR -->
-<section id="generator" class="py-5 bg-light">
-  <div class="container d-flex justify-content-center">
-    {% include "qr_section.html" %}
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section id="about" class="py-5 bg-light">
-  <div class="container text-center">
-    <h2 class="fw-bold mb-3">About This Project</h2>
-
-    <p class="text-muted mb-4">
-      This QR Code Generator is an open-source project built with Python and Flask.
-      It demonstrates how to generate static QR codes locally without relying on
-      third-party services.
-    </p>
-
-    <p class="text-muted">
-      You can explore the full source code, project structure, and documentation
-      on GitHub.
-    </p>
-
-    <a
-      href="https://github.com/ArkileDhamo154589/qr-code-generator"
-      target="_blank"
-      class="btn btn-dark mt-3"
-    >
-      Learn more on GitHub
-    </a>
-  </div>
-</section>
-
-<!-- FEATURES -->
-<section class="py-5">
-  <div class="container text-center">
-    <h2 class="fw-bold mb-3">Free & No Expiration</h2>
-    <p class="text-muted">
-      All generated QR Codes are static and will work forever.
-      This project does not rely on any third-party API.
-    </p>
-
-    <div class="row mt-4 g-3">
-      <div class="col-6 col-md-3">✅ Free to use</div>
-      <div class="col-6 col-md-3">✅ No expiration</div>
-      <div class="col-6 col-md-3">✅ No tracking</div>
-      <div class="col-6 col-md-3">✅ Runs locally</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="card-print">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8" rx="1"></rect></svg>
+        <span>Print card</span>
+      </button>
+      <button type="button" class="btn btn-primary" id="card-download">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+        <span>Download card (PDF)</span>
+      </button>
     </div>
   </div>
-</section>
+</div>
 
 {% endblock %}

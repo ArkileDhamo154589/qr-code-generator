@@ -3,38 +3,80 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}QR Code Generator{% endblock %}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
+    <title>{% block title %}QR Studio{% endblock %}</title>
+    <meta name="description" content="Generate static QR codes locally. Export as image, PDF, or a printable card. No tracking, no expiration.">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-    <header class="site-header">
-        <div class="container">
-            <h1>QR Code Generator</h1>
-            <nav>
-                <a href="/">Home</a>
-                <a href="#generator">Generator</a>
-                <a href="#about">About</a>
-            </nav>
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="/">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+                        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+                        <line x1="14" y1="14" x2="14" y2="14.01"></line>
+                        <line x1="21" y1="14" x2="21" y2="14.01"></line>
+                        <line x1="14" y1="21" x2="14" y2="21.01"></line>
+                        <line x1="17.5" y1="17.5" x2="17.5" y2="17.51"></line>
+                        <line x1="21" y1="21" x2="21" y2="21.01"></line>
+                    </svg>
+                </span>
+                <span class="brand-name">QR&nbsp;Studio</span>
+            </a>
+            <nav class="site-nav">
+                <a href="/">Generator</a>
+                <a href="#features">Formats</a>
+                <a href="https://github.com/ArkileDhamo154589/qr-code-generator" target="_blank" rel="noopener">GitHub</a>
+                <a class="nav-cta" href="/">New QR</a>
+            </nav>
         </div>
     </header>
+
     <main class="site-content">
         {% block content %}{% endblock %}
     </main>
 
     <footer class="site-footer">
-        <div class="container">
-            <p>© {{ 2025 }} QR Code Generator — Local Python Project</p>
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><line x1="14" y1="14" x2="14" y2="14.01"></line><line x1="21" y1="14" x2="21" y2="14.01"></line><line x1="14" y1="21" x2="14" y2="21.01"></line><line x1="17.5" y1="17.5" x2="17.5" y2="17.51"></line><line x1="21" y1="21" x2="21" y2="21.01"></line></svg>
+                </span>
+                <p>QR Studio — a local QR code generator. Static codes, no tracking, never expire.</p>
+            </div>
+            <nav class="footer-cols">
+                <div class="footer-col">
+                    <h4>Product</h4>
+                    <a href="/">Generator</a>
+                    <a href="#features">Formats</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Export</h4>
+                    <a href="#features">Image</a>
+                    <a href="#features">PDF</a>
+                    <a href="#features">Card</a>
+                </div>
+                <div class="footer-col">
+                    <h4>Project</h4>
+                    <a href="https://github.com/ArkileDhamo154589/qr-code-generator" target="_blank" rel="noopener">GitHub</a>
+                </div>
+            </nav>
+        </div>
+        <div class="container footer-bottom">
+            <span>Runs 100% locally. No data leaves your machine.</span>
         </div>
     </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js">
-    </script>
-    <script src="{{ url_for('static', filename='app.js') }}"></script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="{{ url_for('static', filename='three-bg.js') }}"></script>
+    <script src="{{ url_for('static', filename='vendor/jspdf.umd.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 
 </html>

@@ -1,57 +1,62 @@
-# QR Code Generator (Local Web App)
+# QR Code Generator
 
-This project is a **generic QR Code generator section** that can be used
-as part of a website or as a standalone local tool.
+A fast, local-first QR code generator built with Flask. Turn any link or text
+into a static QR code, then export it as a transparent image, a print-ready
+PDF, or a designed business card.
 
-It allows you to generate QR codes from any URL and download them as
-images with a **transparent background**.
+The UI is a dark, CloudConvert-style interface with a live 3D animated
+background (three.js) and a mobile-first responsive layout.
 
-The application runs **100% locally** and does not require an internet
-connection after installation.
+## Features
 
----
+- Convert any URL or text into a static QR code (never expires, no tracking)
+- Pick the QR color and toggle a transparent background
+- Three export modes:
+  - **Image** — transparent PNG, ready for any design
+  - **PDF** — A4 page with the QR centered and the link printed below
+  - **Card** — business-card layout (85.6 x 54 mm) you can print or save as PDF
+- 3D animated background and tilt interactions
+- No database, no third-party APIs, runs fully offline once installed
 
-##  What is this project?
+## Tech stack
 
-This is a simple local web application that:
-- Can be embedded as a **generic section** in a website
-- Allows users to input a URL
-- Generates a QR Code that **never expires**
-- Allows downloading the QR Code as a **transparent PNG**
+- Flask (Python)
+- qrcode + Pillow for QR generation
+- three.js (animated background)
+- jsPDF (client-side PDF and card export, vendored locally)
+- gunicorn (production server)
 
-It does not use any third-party APIs or external services.
+## Run locally
 
----
+```bash
+python -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+flask --app app run --debug
+```
 
-##  Features
+Then open http://127.0.0.1:5000
 
-- Local web interface
-- URL input via form
-- QR codes that never expire
-- Transparent PNG export
-- Lightweight & fast
-- No database
-- No external APIs
-- Ideal for websites, print, or internal tools
+To make it reachable from other devices on your network (e.g. a phone):
 
----
+```bash
+flask --app app run --host 0.0.0.0 --port 8080
+```
 
-##  Requirements
+Open `http://<your-computer-ip>:8080`. Avoid browser-blocked ports such as
+5060/5061; 8080 and 8000 are safe.
 
-- Python 3.9+
-- pip
-- Linux / macOS / Windows (WSL works)
+## Deploy to Render
 
----
+This repo is ready for [Render](https://render.com):
 
-##  Installation & Setup (Local)
+- A `render.yaml` blueprint and a `Procfile` are included.
+- Start command: `gunicorn app:app --bind 0.0.0.0:$PORT`
+- Build command: `pip install -r requirements.txt`
 
-### 1️ Clone the repository
-SEE LIVE https://qr-code-generator-rvde.onrender.com/
+Create a new Web Service from the repository (or use the blueprint) and Render
+will build and start it automatically.
 
-<img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/b646429b-6e8e-4073-bd5c-d89157c0ac76" />
+## License
 
-
-<img width="1549" height="748" alt="image" src="https://github.com/user-attachments/assets/31a25880-584b-4a8b-b622-0617162d8bad" />
-
-
+Open source. Use it freely for websites, print, or internal tools.
