@@ -249,8 +249,195 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (canHover && !reduceMotion) {
-    const card = document.getElementById("convert-card");
-    if (card) attachTilt(card, 6, false);
+    document.querySelectorAll(".convert-card").forEach((el) => attachTilt(el, 5, false));
     document.querySelectorAll("[data-tilt]").forEach((el) => attachTilt(el, 8, true));
+  }
+
+  // ---- Tabs --------------------------------------------------------------
+  const tabs = document.querySelectorAll(".tab");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.classList.toggle("is-active", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        document.getElementById(t.dataset.panel).hidden = !on;
+      });
+    });
+  });
+
+  // ---- Image converter ---------------------------------------------------
+  const convForm = document.getElementById("conv-form");
+  if (convForm) {
+    const dropzone = document.getElementById("conv-dropzone");
+    const fileInput = document.getElementById("conv-input");
+    const pickBtn = document.getElementById("conv-pick");
+    const fileList = document.getElementById("conv-filelist");
+    const convBtn = document.getElementById("conv-convert-btn");
+    const convError = document.getElementById("conv-error");
+    const targetGroup = document.getElementById("target-group");
+    const flowTarget = document.getElementById("flow-target");
+    const resultsWrap = document.getElementById("conv-results");
+    const resultsList = document.getElementById("conv-results-list");
+    const resultsTitle = document.getElementById("conv-results-title");
+    const downloadAll = document.getElementById("conv-download-all");
+
+    let selected = [];
+    let target = "png";
+    let lastResults = [];
+
+    function fmtSize(n) {
+      if (n < 1024) return n + " B";
+      if (n < 1024 * 1024) return (n / 1024).toFixed(1) + " KB";
+      return (n / (1024 * 1024)).toFixed(2) + " MB";
+    }
+
+    function convError_(msg) {
+      convError.textContent = msg || "";
+      convError.hidden = !msg;
+    }
+
+    function renderFiles() {
+      fileList.innerHTML = "";
+      selected.forEach((file, i) => {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "fl-name";
+        name.textContent = file.name;
+        const size = document.createElement("span");
+        size.className = "fl-size";
+        size.textContent = fmtSize(file.size);
+        const rm = document.createElement("button");
+        rm.type = "button";
+        rm.className = "fl-remove";
+        rm.setAttribute("aria-label", "Remove " + file.name);
+        rm.innerHTML =
+          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>';
+        rm.addEventListener("click", () => {
+          selected.splice(i, 1);
+          renderFiles();
+        });
+        li.append(name, size, rm);
+        fileList.appendChild(li);
+      });
+      convBtn.disabled = selected.length === 0;
+    }
+
+    function addFiles(files) {
+      for (const f of files) {
+        if (f.type.startsWith("image/") || /\.(png|jpe?g|webp|avif)$/i.test(f.name)) {
+          selected.push(f);
+        }
+      }
+      renderFiles();
+    }
+
+    pickBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      addFiles(fileInput.files);
+      fileInput.value = "";
+    });
+
+    ["dragenter", "dragover"].forEach((ev) =>
+      dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.add("is-drag");
+      })
+    );
+    ["dragleave", "drop"].forEach((ev) =>
+      dropzone.addEventListener(ev, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("is-drag");
+      })
+    );
+    dropzone.addEventListener("drop", (e) => {
+      if (e.dataTransfer && e.dataTransfer.files) addFiles(e.dataTransfer.files);
+    });
+
+    targetGroup.addEventListener("click", (e) => {
+      const btn = e.target.closest(".target-btn");
+      if (!btn) return;
+      target = btn.dataset.target;
+      targetGroup.querySelectorAll(".target-btn").forEach((b) => {
+        const on = b === btn;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      flowTarget.textContent = target.toUpperCase();
+    });
+
+    convForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      convError_("");
+      if (selected.length === 0) return;
+
+      const fd = new FormData();
+      fd.append("target", target);
+      selected.forEach((f) => fd.append("files", f, f.name));
+
+      convBtn.disabled = true;
+      convBtn.querySelector("span").textContent = "Converting…";
+
+      try {
+        const res = await fetch("/convert", { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) {
+          convError_(data.error || "Conversion failed.");
+          return;
+        }
+        lastResults = data.results || [];
+        renderResults(lastResults, data.errors || []);
+      } catch (err) {
+        convError_("Could not reach the converter. Is the server running?");
+      } finally {
+        convBtn.disabled = selected.length === 0;
+        convBtn.querySelector("span").textContent = "Convert";
+      }
+    });
+
+    function renderResults(results, errors) {
+      resultsList.innerHTML = "";
+      results.forEach((r) => {
+        const item = document.createElement("div");
+        item.className = "result-item";
+
+        const img = document.createElement("img");
+        img.className = "result-thumb";
+        img.src = r.dataUrl;
+        img.alt = r.name;
+
+        const name = document.createElement("p");
+        name.className = "result-name";
+        name.textContent = r.name;
+
+        const size = document.createElement("p");
+        size.className = "result-size";
+        size.textContent = fmtSize(r.bytes);
+
+        const dl = document.createElement("a");
+        dl.className = "result-dl";
+        dl.href = r.dataUrl;
+        dl.download = r.name;
+        dl.innerHTML =
+          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg><span>Download</span>';
+
+        item.append(img, name, size, dl);
+        resultsList.appendChild(item);
+      });
+
+      resultsTitle.textContent =
+        results.length + " file" + (results.length === 1 ? "" : "s") + " converted to " + target.toUpperCase();
+      resultsWrap.hidden = results.length === 0;
+
+      if (errors && errors.length) {
+        convError_(errors.length + " file(s) could not be converted.");
+      }
+    }
+
+    downloadAll.addEventListener("click", () => {
+      lastResults.forEach((r, i) => {
+        setTimeout(() => download(r.dataUrl, r.name), i * 250);
+      });
+    });
   }
 });

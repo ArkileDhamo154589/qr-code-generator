@@ -8,24 +8,37 @@
 <section class="hero">
   <div class="container">
     <div class="hero-head">
-      <h1>QR Code <span class="accent">Generator</span></h1>
+      <h1>QR Studio <span class="accent">&amp; Converter</span></h1>
       <p class="lead">
-        Convert any link or text into a static QR code, then download it as an
-        image, a PDF, or a print-ready card.
+        Generate static QR codes and convert images between PNG, JPG, WEBP and
+        AVIF — single files or many at once.
       </p>
+    </div>
 
-      <!-- format flow (à la CloudConvert "WEBP to JPG") -->
-      <div class="flow" aria-hidden="true">
-        <span class="flow-pill">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-          LINK / TEXT
-        </span>
-        <span class="flow-to">to</span>
-        <span class="flow-pill flow-pill--out">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
-          QR CODE
-        </span>
-      </div>
+    <!-- Tabs -->
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab is-active" id="tab-qr" role="tab" aria-selected="true" data-panel="panel-qr">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
+        QR Code
+      </button>
+      <button type="button" class="tab" id="tab-convert" role="tab" aria-selected="false" data-panel="panel-convert">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"></path></svg>
+        Image Converter
+      </button>
+    </div>
+
+    <!-- PANEL: QR -->
+    <div class="panel-tab" id="panel-qr" role="tabpanel">
+    <div class="flow" aria-hidden="true">
+      <span class="flow-pill">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        LINK / TEXT
+      </span>
+      <span class="flow-to">to</span>
+      <span class="flow-pill flow-pill--out">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
+        QR CODE
+      </span>
     </div>
 
     <!-- The conversion card -->
@@ -112,6 +125,75 @@
       </div>
     </div>
     </div>
+    </div><!-- /panel-qr -->
+
+    <!-- PANEL: Image Converter -->
+    <div class="panel-tab" id="panel-convert" role="tabpanel" hidden>
+      <div class="flow" aria-hidden="true">
+        <span class="flow-pill">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L6 21"></path></svg>
+          IMAGE
+        </span>
+        <span class="flow-to">to</span>
+        <span class="flow-pill flow-pill--out" id="flow-target">PNG</span>
+      </div>
+
+      <div class="tilt-scene">
+      <div class="convert-card" id="convert-card-2">
+        <form id="conv-form">
+          <div class="dropzone" id="conv-dropzone">
+            <div class="dz-inner">
+              <span class="dz-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5-5 5 5"></path><path d="M12 5v12"></path></svg>
+              </span>
+              <input type="file" id="conv-input" accept="image/png,image/jpeg,image/webp,image/avif,.png,.jpg,.jpeg,.webp,.avif" multiple hidden>
+              <button type="button" class="btn btn-primary" id="conv-pick">
+                <span>Select images</span>
+              </button>
+              <p class="dz-hint">or drop PNG, JPG, WEBP or AVIF files here — many at once</p>
+            </div>
+          </div>
+
+          <div class="conv-controls">
+            <div class="target-block">
+              <span class="opt-label">Convert to</span>
+              <div class="target-group" id="target-group" role="group" aria-label="Target format">
+                <button type="button" class="target-btn is-active" data-target="png" aria-pressed="true">PNG</button>
+                <button type="button" class="target-btn" data-target="jpg" aria-pressed="false">JPG</button>
+                <button type="button" class="target-btn" data-target="webp" aria-pressed="false">WEBP</button>
+                <button type="button" class="target-btn" data-target="avif" aria-pressed="false">AVIF</button>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="conv-convert-btn" disabled>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path><path d="M3 21v-5h5"></path></svg>
+              <span>Convert</span>
+            </button>
+          </div>
+
+          <p class="form-error" id="conv-error" role="alert" hidden></p>
+
+          <ul class="file-list" id="conv-filelist"></ul>
+        </form>
+
+        <div class="conv-results" id="conv-results" hidden>
+          <div class="export-bar">
+            <div class="export-meta">
+              <span class="export-title" id="conv-results-title">Converted files</span>
+              <span class="export-sub">Download individually or all at once</span>
+            </div>
+            <div class="export-actions">
+              <button type="button" class="btn btn-success" id="conv-download-all">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
+                <span>Download all</span>
+              </button>
+            </div>
+          </div>
+          <div class="result-grid" id="conv-results-list"></div>
+        </div>
+      </div>
+      </div>
+    </div><!-- /panel-convert -->
+
   </div>
 </section>
 
