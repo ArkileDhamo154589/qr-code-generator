@@ -72,15 +72,96 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // ---- QR content types -------------------------------------------------
+  let qrType = "url";
+  const qrTypes = document.getElementById("qr-types");
+  if (qrTypes) {
+    qrTypes.addEventListener("click", (e) => {
+      const b = e.target.closest(".qr-type-btn");
+      if (!b) return;
+      qrType = b.dataset.type;
+      qrTypes.querySelectorAll(".qr-type-btn").forEach((x) =>
+        x.classList.toggle("is-active", x === b)
+      );
+      document.querySelectorAll("#qr-form .qr-fields").forEach((f) => {
+        f.hidden = f.dataset.type !== qrType;
+      });
+      showError("");
+    });
+  }
+
+  function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+  function wesc(s) {
+    return s.replace(/([\\;,:"])/g, "\\$1"); // escape for Wi-Fi payload
+  }
+
+  function buildQrData() {
+    switch (qrType) {
+      case "wifi": {
+        const ssid = val("wifi-ssid");
+        if (!ssid) return { error: "Please enter the Wi-Fi network name." };
+        const enc = document.getElementById("wifi-enc").value;
+        const pass = val("wifi-pass");
+        const hidden = document.getElementById("wifi-hidden").checked;
+        let d = "WIFI:T:" + enc + ";S:" + wesc(ssid) + ";";
+        if (enc !== "nopass") d += "P:" + wesc(pass) + ";";
+        if (hidden) d += "H:true;";
+        return { data: d + ";", display: "Wi-Fi: " + ssid };
+      }
+      case "vcard": {
+        const first = val("vc-first"), last = val("vc-last");
+        if (!first && !last) return { error: "Please enter a name." };
+        const full = (first + " " + last).trim();
+        let d = "BEGIN:VCARD\nVERSION:3.0\nN:" + last + ";" + first + "\nFN:" + full + "\n";
+        if (val("vc-org")) d += "ORG:" + val("vc-org") + "\n";
+        if (val("vc-phone")) d += "TEL:" + val("vc-phone") + "\n";
+        if (val("vc-email")) d += "EMAIL:" + val("vc-email") + "\n";
+        if (val("vc-url")) d += "URL:" + val("vc-url") + "\n";
+        return { data: d + "END:VCARD", display: full || "Contact" };
+      }
+      case "email": {
+        const to = val("em-to");
+        if (!to) return { error: "Please enter a recipient email." };
+        const p = [];
+        if (val("em-subj")) p.push("subject=" + encodeURIComponent(val("em-subj")));
+        if (val("em-body")) p.push("body=" + encodeURIComponent(val("em-body")));
+        return { data: "mailto:" + to + (p.length ? "?" + p.join("&") : ""), display: to };
+      }
+      case "sms": {
+        const num = val("sms-num");
+        if (!num) return { error: "Please enter a phone number." };
+        const msg = val("sms-msg");
+        return { data: "SMSTO:" + num + (msg ? ":" + msg : ""), display: "SMS " + num };
+      }
+      case "phone": {
+        const num = val("tel-num");
+        if (!num) return { error: "Please enter a phone number." };
+        return { data: "tel:" + num, display: num };
+      }
+      case "geo": {
+        const lat = val("geo-lat"), lng = val("geo-lng");
+        if (!lat || !lng) return { error: "Please enter latitude and longitude." };
+        return { data: "geo:" + lat + "," + lng, display: lat + ", " + lng };
+      }
+      default: {
+        const v = val("url-input");
+        if (!v) return { error: "Please enter a link or text." };
+        return { data: v, display: v };
+      }
+    }
+  }
+
   // ---- Generate ---------------------------------------------------------
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     showError("");
 
-    const url = urlInput.value.trim();
-    if (!url) {
-      showError("Please enter a link or text.");
-      urlInput.focus();
+    const built = buildQrData();
+    if (built.error) {
+      showError(built.error);
       return;
     }
 
@@ -92,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          url,
+          url: built.data,
           color: colorInput.value,
           transparent: transparentInput.checked,
         }),
@@ -105,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       state.dataUrl = "data:image/png;base64," + data.qr_image;
-      state.url = url;
+      state.url = built.display;
       state.title = titleInput.value.trim();
 
       qrImage.src = state.dataUrl;
@@ -284,6 +365,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const resultsList = document.getElementById("conv-results-list");
     const resultsTitle = document.getElementById("conv-results-title");
     const downloadAll = document.getElementById("conv-download-all");
+    const downloadAllLabel = document.getElementById("conv-download-all-label");
+    const qualityInput = document.getElementById("conv-quality");
+    const qualityVal = document.getElementById("quality-val");
+    const qualityWrap = document.getElementById("quality-wrap");
+    const resizeSelect = document.getElementById("conv-resize");
 
     let selected = [];
     let target = "png";
@@ -399,7 +485,14 @@ document.addEventListener("DOMContentLoaded", () => {
         b.setAttribute("aria-pressed", on ? "true" : "false");
       });
       flowTarget.textContent = target.toUpperCase();
+      qualityWrap.hidden = target === "png";
       updateConvBtn();
+    });
+
+    // Quality is irrelevant for lossless PNG.
+    qualityWrap.hidden = target === "png";
+    qualityInput.addEventListener("input", () => {
+      qualityVal.textContent = qualityInput.value;
     });
 
     convForm.addEventListener("submit", async (e) => {
@@ -409,6 +502,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const fd = new FormData();
       fd.append("target", target);
+      fd.append("quality", qualityInput.value);
+      fd.append("max_dim", resizeSelect.value);
       selected.forEach((f) => fd.append("files", f, f.name));
 
       convBtn.disabled = true;
@@ -448,7 +543,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const size = document.createElement("p");
         size.className = "result-size";
-        size.textContent = fmtSize(r.bytes);
+        if (r.originalBytes) {
+          const pct = Math.round((1 - r.bytes / r.originalBytes) * 100);
+          size.innerHTML =
+            fmtSize(r.originalBytes) + " &rarr; <strong>" + fmtSize(r.bytes) + "</strong> " +
+            '<span class="' + (pct >= 0 ? "stat-down" : "stat-up") + '">' +
+            (pct >= 0 ? "−" : "+") + Math.abs(pct) + "%</span>";
+        } else {
+          size.textContent = fmtSize(r.bytes);
+        }
 
         const dl = document.createElement("a");
         dl.className = "result-dl";
@@ -470,10 +573,40 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    downloadAll.addEventListener("click", () => {
-      lastResults.forEach((r, i) => {
-        setTimeout(() => download(r.dataUrl, r.name), i * 250);
-      });
+    downloadAll.addEventListener("click", async () => {
+      if (!lastResults.length) return;
+      if (lastResults.length === 1) {
+        download(lastResults[0].dataUrl, lastResults[0].name);
+        return;
+      }
+      if (typeof JSZip === "undefined") {
+        lastResults.forEach((r, i) => setTimeout(() => download(r.dataUrl, r.name), i * 250));
+        return;
+      }
+
+      const prev = downloadAllLabel.textContent;
+      downloadAll.disabled = true;
+      downloadAllLabel.textContent = "Zipping…";
+      try {
+        const zip = new JSZip();
+        const used = {};
+        lastResults.forEach((r) => {
+          let name = r.name;
+          if (used[name] != null) {
+            const dot = name.lastIndexOf(".");
+            name = name.slice(0, dot) + "-" + (used[r.name] + 1) + name.slice(dot);
+          }
+          used[r.name] = (used[r.name] || 0) + 1;
+          zip.file(name, r.dataUrl.split(",")[1], { base64: true });
+        });
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+        download(url, "converted-" + target + ".zip");
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+      } finally {
+        downloadAll.disabled = false;
+        downloadAllLabel.textContent = prev;
+      }
     });
   }
 });

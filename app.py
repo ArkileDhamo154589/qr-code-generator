@@ -85,10 +85,14 @@ def generate():
     return jsonify(qr_image=qr_image, url=url)
 
 
-def convert_image(file_storage, target):
+def convert_image(file_storage, target, quality=90, max_dim=0, original_bytes=0):
     pil_format, ext, mime, keeps_alpha = TARGETS[target]
 
     image = Image.open(file_storage.stream)
+
+    # Optional downscale (keeps aspect ratio, never upscales).
+    if max_dim and (image.width > max_dim or image.height > max_dim):
+        image.thumbnail((max_dim, max_dim), Image.LANCZOS)
 
     save_kwargs = {}
     if keeps_alpha:
@@ -103,7 +107,11 @@ def convert_image(file_storage, target):
             image = background
         elif image.mode != "RGB":
             image = image.convert("RGB")
-        save_kwargs["quality"] = 90
+
+    if pil_format == "PNG":
+        save_kwargs["optimize"] = True
+    else:
+        save_kwargs["quality"] = quality
 
     buffer = BytesIO()
     image.save(buffer, format=pil_format, **save_kwargs)
@@ -112,7 +120,14 @@ def convert_image(file_storage, target):
     base = os.path.splitext(os.path.basename(file_storage.filename or "image"))[0]
     out_name = (base or "image") + "." + ext
     data_url = "data:" + mime + ";base64," + base64.b64encode(buffer.getvalue()).decode()
-    return {"name": out_name, "dataUrl": data_url, "bytes": buffer.getbuffer().nbytes}
+    return {
+        "name": out_name,
+        "dataUrl": data_url,
+        "bytes": buffer.getbuffer().nbytes,
+        "originalBytes": original_bytes,
+        "width": image.width,
+        "height": image.height,
+    }
 
 
 @app.route("/convert", methods=["POST"])
@@ -120,6 +135,18 @@ def convert():
     target = (request.form.get("target") or "").strip().lower()
     if target not in TARGETS:
         return jsonify(error="Unsupported target format."), 400
+
+    try:
+        quality = int(request.form.get("quality") or 90)
+    except ValueError:
+        quality = 90
+    quality = max(10, min(100, quality))
+
+    try:
+        max_dim = int(request.form.get("max_dim") or 0)
+    except ValueError:
+        max_dim = 0
+    max_dim = max(0, min(10000, max_dim))
 
     files = [f for f in request.files.getlist("files") if f and f.filename]
     if not files:
@@ -136,7 +163,7 @@ def convert():
             if size > MAX_FILE_BYTES:
                 errors.append({"name": f.filename, "error": "File too large (max 20 MB)."})
                 continue
-            results.append(convert_image(f, target))
+            results.append(convert_image(f, target, quality, max_dim, size))
         except Exception:
             errors.append({"name": f.filename, "error": "Could not convert this file."})
 

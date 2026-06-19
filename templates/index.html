@@ -47,29 +47,87 @@
       <div class="dropzone">
         <div class="dz-inner">
           <span class="dz-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
           </span>
-          <p class="dz-title">Paste your link or text</p>
+          <p class="dz-title">Create your QR code</p>
 
           <form id="qr-form" novalidate>
-            <div class="input-group">
-              <span class="input-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
-              </span>
-              <input
-                type="text"
-                id="url-input"
-                name="url"
-                placeholder="https://example.com or any text"
-                autocomplete="off"
-                required
-              />
-              <button type="submit" class="btn btn-primary" id="generate-btn">
-                <span>Generate</span>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m13 6 6 6-6 6"></path></svg>
-              </button>
+            <div class="qr-types" id="qr-types" role="group" aria-label="QR type">
+              <button type="button" class="qr-type-btn is-active" data-type="url">URL / Text</button>
+              <button type="button" class="qr-type-btn" data-type="wifi">Wi-Fi</button>
+              <button type="button" class="qr-type-btn" data-type="vcard">Contact</button>
+              <button type="button" class="qr-type-btn" data-type="email">Email</button>
+              <button type="button" class="qr-type-btn" data-type="sms">SMS</button>
+              <button type="button" class="qr-type-btn" data-type="phone">Phone</button>
+              <button type="button" class="qr-type-btn" data-type="geo">Location</button>
             </div>
-            <p class="dz-hint">Works with links, plain text, email addresses, Wi-Fi and more</p>
+
+            <div class="qr-fields-wrap">
+              <div class="qr-fields" data-type="url">
+                <div class="input-group">
+                  <span class="input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                  </span>
+                  <input type="text" id="url-input" name="url" placeholder="https://example.com or any text" autocomplete="off">
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="wifi" hidden>
+                <div class="field-grid">
+                  <label class="qf"><span>Network name (SSID)</span><input type="text" id="wifi-ssid" autocomplete="off"></label>
+                  <label class="qf"><span>Password</span><input type="text" id="wifi-pass" autocomplete="off"></label>
+                  <label class="qf"><span>Encryption</span>
+                    <select id="wifi-enc" class="select"><option value="WPA">WPA / WPA2</option><option value="WEP">WEP</option><option value="nopass">None</option></select>
+                  </label>
+                  <label class="switch wifi-hidden-row"><input type="checkbox" id="wifi-hidden"><span class="switch-track" aria-hidden="true"></span><span class="switch-label">Hidden network</span></label>
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="vcard" hidden>
+                <div class="field-grid">
+                  <label class="qf"><span>First name</span><input type="text" id="vc-first" autocomplete="off"></label>
+                  <label class="qf"><span>Last name</span><input type="text" id="vc-last" autocomplete="off"></label>
+                  <label class="qf"><span>Phone</span><input type="text" id="vc-phone" autocomplete="off"></label>
+                  <label class="qf"><span>Email</span><input type="text" id="vc-email" autocomplete="off"></label>
+                  <label class="qf"><span>Organization</span><input type="text" id="vc-org" autocomplete="off"></label>
+                  <label class="qf"><span>Website</span><input type="text" id="vc-url" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="email" hidden>
+                <div class="field-grid">
+                  <label class="qf qf-wide"><span>To</span><input type="text" id="em-to" placeholder="name@example.com" autocomplete="off"></label>
+                  <label class="qf qf-wide"><span>Subject</span><input type="text" id="em-subj" autocomplete="off"></label>
+                  <label class="qf qf-wide"><span>Message</span><input type="text" id="em-body" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="sms" hidden>
+                <div class="field-grid">
+                  <label class="qf"><span>Phone number</span><input type="text" id="sms-num" autocomplete="off"></label>
+                  <label class="qf"><span>Message</span><input type="text" id="sms-msg" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="phone" hidden>
+                <div class="field-grid">
+                  <label class="qf qf-wide"><span>Phone number</span><input type="text" id="tel-num" placeholder="+30 210 0000000" autocomplete="off"></label>
+                </div>
+              </div>
+
+              <div class="qr-fields" data-type="geo" hidden>
+                <div class="field-grid">
+                  <label class="qf"><span>Latitude</span><input type="text" id="geo-lat" placeholder="37.9838" autocomplete="off"></label>
+                  <label class="qf"><span>Longitude</span><input type="text" id="geo-lng" placeholder="23.7275" autocomplete="off"></label>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-convert" id="generate-btn">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M14 14h3v3"></path><path d="M21 14v.01"></path><path d="M14 21h3"></path><path d="M21 17v4"></path></svg>
+              <span id="generate-label">Generate QR code</span>
+            </button>
+            <p class="dz-hint">Static, offline and never expires — no tracking.</p>
             <p class="form-error" id="form-error" role="alert" hidden></p>
           </form>
         </div>
@@ -188,6 +246,22 @@
             </div>
           </div>
 
+          <div class="conv-options">
+            <label class="opt conv-quality" id="quality-wrap">
+              <span class="opt-label">Quality <span class="muted" id="quality-val">90</span></span>
+              <input type="range" id="conv-quality" min="10" max="100" value="90">
+            </label>
+            <label class="opt">
+              <span class="opt-label">Max size</span>
+              <select id="conv-resize" class="select">
+                <option value="0">Original size</option>
+                <option value="2048">2048 px</option>
+                <option value="1024">1024 px</option>
+                <option value="512">512 px</option>
+              </select>
+            </label>
+          </div>
+
           <p class="form-error" id="conv-error" role="alert" hidden></p>
 
           <button type="submit" class="btn btn-primary btn-block btn-convert" id="conv-convert-btn" disabled>
@@ -205,7 +279,7 @@
             <div class="export-actions">
               <button type="button" class="btn btn-success" id="conv-download-all">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><path d="M7 10l5 5 5-5"></path><path d="M12 15V3"></path></svg>
-                <span>Download all</span>
+                <span id="conv-download-all-label">Download all (ZIP)</span>
               </button>
             </div>
           </div>
