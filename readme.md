@@ -1,27 +1,42 @@
-# QR Code Generator
+# QR Studio & Converter
 
-A fast, local-first QR code generator built with Flask. Turn any link or text
-into a static QR code, then export it as a transparent image, a print-ready
-PDF, or a designed business card.
+A fast, local-first **QR code generator** and **image converter** built with
+Flask. Turn any link or text into a static QR code, or batch-convert images
+between PNG, JPG, WEBP and AVIF — all in a dark, CloudConvert-style interface
+with a live 3D animated background.
 
-The UI is a dark, CloudConvert-style interface with a live 3D animated
-background (three.js) and a mobile-first responsive layout.
+![QR generator](docs/screenshots/01-qr-generator.png)
 
 ## Features
 
+**QR codes**
 - Convert any URL or text into a static QR code (never expires, no tracking)
 - Pick the QR color and toggle a transparent background
-- Three export modes:
+- Export three ways:
   - **Image** — transparent PNG, ready for any design
   - **PDF** — A4 page with the QR centered and the link printed below
   - **Card** — business-card layout (85.6 x 54 mm) you can print or save as PDF
-- 3D animated background and tilt interactions
-- No database, no third-party APIs, runs fully offline once installed
+
+**Image converter**
+- Convert between **PNG, JPG, WEBP and AVIF** in any direction
+- **Batch**: drop or select many files and convert them all at once
+- Per-file download or **Download all**, with live thumbnails and sizes
+
+**Everything else**
+- 3D animated background (three.js) and tilt / hover interactions
+- Mobile-first responsive layout
+- No database, no third-party APIs — runs fully offline once installed
+
+## Screenshots
+
+| Generated QR + export | Image converter | Mobile |
+| --- | --- | --- |
+| ![QR result](docs/screenshots/02-qr-result.png) | ![Converter](docs/screenshots/03-image-converter.png) | ![Mobile](docs/screenshots/04-mobile.png) |
 
 ## Tech stack
 
 - Flask (Python)
-- qrcode + Pillow for QR generation
+- qrcode + Pillow for QR generation and image conversion (native WEBP/AVIF)
 - three.js (animated background)
 - jsPDF (client-side PDF and card export, vendored locally)
 - gunicorn (production server)
@@ -60,3 +75,5 @@ will build and start it automatically.
 ## License
 
 Open source. Use it freely for websites, print, or internal tools.
+
+Designed & built by [Achileas Dhamo](https://github.com/ArkileDhamo154589).
