@@ -35,7 +35,7 @@
   ];
 
   var shapes = [];
-  var COUNT = 14;
+  var COUNT = 18;
   for (var i = 0; i < COUNT; i++) {
     var geo = geometries[i % geometries.length];
     var mat = new THREE.MeshBasicMaterial({
@@ -64,6 +64,25 @@
     group.add(mesh);
     shapes.push(mesh);
   }
+
+  // Particle starfield for depth
+  var particleCount = 700;
+  var positions = new Float32Array(particleCount * 3);
+  for (var p = 0; p < particleCount; p++) {
+    positions[p * 3] = (Math.cos(p) * 0.5 + (p % 50) / 50 - 0.5) * 60 - 0 + (Math.sin(p * 3.7) * 30);
+    positions[p * 3 + 1] = (Math.sin(p * 1.3) * 30);
+    positions[p * 3 + 2] = (Math.cos(p * 0.7) * 30) - 10;
+  }
+  var pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  var pMat = new THREE.PointsMaterial({
+    color: RED,
+    size: 0.08,
+    transparent: true,
+    opacity: 0.6
+  });
+  var particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
 
   var target = { x: 0, y: 0 };
   var current = { x: 0, y: 0 };
@@ -97,8 +116,11 @@
     current.x += (target.x - current.x) * 0.05;
     current.y += (target.y - current.y) * 0.05;
 
-    group.rotation.y = current.x * 0.4;
+    group.rotation.y = current.x * 0.4 + t * 0.02;
     group.rotation.x = current.y * 0.3;
+
+    particles.rotation.y -= 0.0006;
+    particles.rotation.x = -current.y * 0.15;
 
     for (var i = 0; i < shapes.length; i++) {
       var m = shapes[i];

@@ -224,23 +224,33 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.save("qr-card-" + safeName("code") + ".pdf");
   });
 
-  // ---- 3D tilt on the converter card ------------------------------------
-  const card = document.getElementById("convert-card");
+  // ---- 3D tilt (converter card + info cards) ----------------------------
   const reduceMotion =
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const canHover = window.matchMedia && window.matchMedia("(hover: hover)").matches;
 
-  if (card && canHover && !reduceMotion) {
-    const MAX = 6; // degrees
-    card.addEventListener("mousemove", (e) => {
-      const r = card.getBoundingClientRect();
+  function attachTilt(el, max, lift) {
+    let raf = 0;
+    el.addEventListener("mousemove", (e) => {
+      const r = el.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width - 0.5;
       const py = (e.clientY - r.top) / r.height - 0.5;
-      card.style.transform =
-        `rotateY(${px * MAX}deg) rotateX(${-py * MAX}deg) translateZ(0)`;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        el.style.transform =
+          `perspective(1000px) rotateY(${px * max}deg) rotateX(${-py * max}deg) translateZ(0)` +
+          (lift ? ` translateY(-4px)` : "");
+      });
     });
-    card.addEventListener("mouseleave", () => {
-      card.style.transform = "";
+    el.addEventListener("mouseleave", () => {
+      if (raf) cancelAnimationFrame(raf);
+      el.style.transform = "";
     });
+  }
+
+  if (canHover && !reduceMotion) {
+    const card = document.getElementById("convert-card");
+    if (card) attachTilt(card, 6, false);
+    document.querySelectorAll("[data-tilt]").forEach((el) => attachTilt(el, 8, true));
   }
 });
